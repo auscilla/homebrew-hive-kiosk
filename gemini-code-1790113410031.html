@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homebrew Hive Kiosk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen flex flex-col justify-between">
+
+  <!-- ==================== SCREEN 1: LANDING SCREEN ==================== -->
+  <div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
+    <h1 class="text-3xl md:text-5xl tracking-wide mt-8 text-white">
+      Print Your Own Video Game!
+    </h1>
+
+    <div class="relative flex flex-col items-center my-auto">
+      <div class="relative w-56 h-64 flex items-center justify-center">
+        <!-- Cartridge Base Image -->
+        <img src="assets/brand/cartridge-landing.png" alt="Cartridge" class="absolute inset-0 w-full h-full object-contain" />
+        <!-- QR Code Overlay -->
+        <img src="assets/brand/qr-landing.png" alt="QR Code" class="w-24 h-24 relative z-10 rounded shadow-md mt-2" />
+      </div>
+      <!-- Animated Bee Icon -->
+      <img src="assets/brand/logo-bee.png" alt="Bee" class="absolute -right-10 top-1/2 -translate-y-1/2 w-12 h-12 animate-bounce" />[cite: 1]
+    </div>
+
+    <div class="mb-8">
+      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-4">
+        With Homebrew Hive[cite: 1]
+      </h2>
+      <p class="text-amber-400 text-xs md:text-sm animate-pulse">Tap Screen to Begin</p>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 2: BROWSE GAMES ==================== -->
+  <div id="screen-browse" class="screen hidden flex-col h-full bg-zinc-900 p-6">
+    <!-- Header Controls -->
+    <div class="flex items-center justify-between mb-4 bg-zinc-800 p-3 rounded-xl border border-zinc-700">
+      <button class="flex items-center gap-2 bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600">
+        👤 Login
+      </button>
+      <div class="bg-zinc-950 px-8 py-2 rounded-lg font-bold text-md tracking-wider text-zinc-300 border border-zinc-800">
+        SEARCH[cite: 2, 3]
+      </div>
+      <div class="flex items-center gap-3">
+        <img src="assets/brand/logo-bee.png" alt="Logo" class="w-8 h-8" />[cite: 2, 3]
+        <button class="flex flex-col items-center bg-zinc-700 px-3 py-1 rounded-lg text-[10px] hover:bg-zinc-600">
+          <span>🖨️</span>
+          <span>PRINT</span>[cite: 2, 3]
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs">All Games</button>[cite: 2]
+      <button onclick="filterCategory('New')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">New</button>[cite: 2]
+      <button onclick="filterCategory('Classic')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Classic</button>[cite: 2]
+      <button onclick="filterCategory('Adventure')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Adventure</button>[cite: 2]
+      <button onclick="filterCategory('Action')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Action</button>[cite: 2]
+      <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>[cite: 2]
+    </div>
+
+    <!-- Game Cards Grid -->
+    <div id="game-grid" class="grid grid-cols-3 gap-4 overflow-y-auto flex-1 pr-2">
+      <!-- Dynamic content from app.js -->
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 3: CHECKOUT MODAL ==================== -->
+  <div id="modal-checkout" class="screen hidden fixed inset-0 bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm z-50">
+    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
+        <h2 class="text-xl font-bold tracking-wide">Checkout / Wishlist</h2>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6 p-6">
+        <!-- Left Column: Details & Actions -->
+        <div class="flex flex-col gap-4">
+          <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Game Details</h3>
+          <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-4 flex gap-4 items-center">
+            <img id="detail-img" src="" class="w-20 h-20 object-cover rounded-lg border border-zinc-700" alt="Cover" />
+            <div>
+              <div class="text-[10px] text-zinc-400 uppercase">Cart Summary</div>
+              <div id="detail-title" class="text-md font-bold text-amber-400">Title</div>
+              <div id="detail-price" class="text-sm text-zinc-300">Price: $0.00</div>[cite: 3]
+            </div>
+          </div>
+
+          <div class="mt-2">
+            <label class="block text-[10px] uppercase mb-1 text-zinc-400">EMAIL</label>[cite: 3]
+            <input type="email" value="user@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-xs focus:outline-none focus:border-amber-500" />[cite: 3]
+          </div>
+
+          <div class="flex flex-col gap-2 mt-auto">
+            <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-md shadow-lg">PRINT</button>[cite: 3]
+            <button id="btn-wishlist" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>[cite: 3]
+            <button id="btn-cancel" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>[cite: 3]
+          </div>
+        </div>
+
+        <!-- Right Column: Previews -->
+        <div class="flex flex-col gap-4">
+          <h3 class="text-lg font-bold border-b border-zinc-700 pb-2">Gameplay Previews</h3>[cite: 3]
+          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-zinc-700">
+            <video id="preview-video" autoplay loop muted class="w-full h-full object-cover">
+              <source id="preview-video-src" src="" type="video/mp4" />
+            </video>
+            <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>[cite: 3]
+          </div>
+
+          <div id="screen-grabs-container" class="grid grid-cols-3 gap-2">
+            <!-- Dynamic Screenshot Elements -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 4: PRINTING PROGRESS ==================== -->
+  <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full bg-zinc-950 p-8 text-center relative">
+    <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
+    
+    <div class="relative mb-12">
+      <div class="w-48 h-56 relative flex items-center justify-center">
+        <img src="assets/brand/cartridge-printing.png" alt="Printing Cartridge" class="absolute inset-0 w-full h-full object-contain" />
+        <div id="printing-cart-title" class="relative z-10 bg-zinc-900/90 text-amber-400 text-[10px] p-2 rounded max-w-[120px] text-center font-bold truncate">
+          GAME TITLE
+        </div>
+      </div>
+      
+      <!-- Floating Bee Animations -->
+      <img src="assets/brand/logo-bee.png" alt="Bee" class="absolute -top-6 -left-6 w-8 h-8 animate-pulse" />
+      <img src="assets/brand/logo-bee.png" alt="Bee" class="absolute -top-4 -right-8 w-6 h-6 animate-bounce" />
+      <img src="assets/brand/logo-bee.png" alt="Bee" class="absolute -bottom-6 right-2 w-8 h-8 animate-pulse" />
+    </div>
+
+    <!-- Honey Progress Bar -->
+    <div class="w-full max-w-md bg-zinc-800 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1">
+      <div id="progress-bar" class="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full w-0 transition-all duration-300"></div>
+    </div>
+    <div class="mt-4 text-xs tracking-widest text-zinc-400">Loading...</div>[cite: 4]
+  </div>
+
+  <!-- ==================== SCREEN 5: PRINT ERROR ==================== -->
+  <div id="screen-error" class="screen hidden flex-col items-center justify-center h-full bg-zinc-950 p-8 text-center">
+    <h1 class="text-2xl font-bold text-rose-500 mb-8">ERROR: PRINTING FAILED</h1>
+    <img src="assets/brand/error-bee.png" alt="Error Bee" class="w-24 h-24 mb-8 animate-bounce" />[cite: 5]
+    <p class="text-zinc-400 text-xs max-w-md mb-8">Something went wrong while flashing the cartridge. Please notify a team member.</p>
+    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 px-6 py-3 rounded-xl text-xs border border-zinc-600">
+      Return to Home
+    </button>
+  </div>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
