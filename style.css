@@ -1,0 +1,28 @@
+.font-pixel {
+  font-family: 'Press Start 2P', monospace;
+}
+
+.screen {
+  width: 100vw;
+  height: 100vh;
+}
+
+.screen.hidden {
+  display: none !important;
+}
+
+.screen.active {
+  display: flex !important;
+}
+
+/* Scrollbar styles for the game catalogue */
+#game-grid::-webkit-scrollbar {
+  width: 8px;
+}
+#game-grid::-webkit-scrollbar-track {
+  background: #18181b;
+}
+#game-grid::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
