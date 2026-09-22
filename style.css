@@ -15,9 +15,22 @@
   display: flex !important;
 }
 
-/* Scrollbar styles for the game catalogue */
+/* Background Pattern for Progress/Error screens */
+.bg-circuit {
+  background-color: #09090b;
+  background-image: url('assets/brand/bg-circuit-pattern.png');
+  background-size: cover;
+  background-position: center;
+}
+
+/* Honey Fill for Progress Bar */
+.bg-honey {
+  background-image: url('assets/brand/honey-bar-fill.png'), linear-gradient(to right, #d97706, #f59e0b);
+  background-size: contain;
+}
+
 #game-grid::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 #game-grid::-webkit-scrollbar-track {
   background: #18181b;
