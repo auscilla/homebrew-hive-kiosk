@@ -3,6 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
+let currentUser = null;
 
 async function loadGamesFromSupabase() {
   const { data, error } = await supabaseClient
@@ -96,10 +97,78 @@ function openCheckout(gameId) {
 
   navigateTo('modal-checkout');
 }
+/* ==================== SESSION & LOGIN LOGIC ==================== */
+
+function setCurrentUser(user) {
+  currentUser = user;
+  localStorage.setItem('kiosk_user_email', user.email);
+  
+  const loginBtn = document.getElementById('btn-login');
+  if (loginBtn) {
+    loginBtn.innerText = `👤 ${user.email.split('@')[0]}`;
+  }
+}
+
+function logoutUser() {
+  currentUser = null;
+  localStorage.removeItem('kiosk_user_email');
+  
+  const loginBtn = document.getElementById('btn-login');
+  if (loginBtn) {
+    loginBtn.innerText = 'Login';
+  }
+}
+
+async function checkSavedUserSession() {
+  const savedEmail = localStorage.getItem('kiosk_user_email');
+  if (!savedEmail) return;
+
+  try {
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('*')
+      .ilike('email', savedEmail)
+      .eq('account_type', 'gamer')
+      .single();
+
+    if (user) {
+      setCurrentUser(user);
+    }
+  } catch (err) {
+    console.error('Session restore failed:', err);
+  }
+}
+
+async function saveGameToUserWishlist(user, gameTitle) {
+  let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
+
+  if (!wishlistArray.includes(gameTitle)) {
+    wishlistArray.push(gameTitle);
+  }
+
+  const updatedWishlist = wishlistArray.join(', ');
+
+  const { error: updateError } = await supabaseClient
+    .from('users')
+    .update({ wishlist: updatedWishlist })
+    .eq('id', user.id);
+
+  if (!updateError) {
+    user.wishlist = updatedWishlist;
+    closeWishlistAuthModal();
+    alert(`"${gameTitle}" saved to your wishlist!`);
+  } else {
+    alert('Failed to save to wishlist. Please try again.');
+  }
+}
 /* ==================== WISHLIST MODAL LOGIC ==================== */
 
 function openWishlistAuthModal() {
   if (!selectedGameForWishlist) return;
+  if (currentUser) {
+    saveGameToUserWishlist(currentUser, selectedGameForWishlist.title);
+    return;
+  }
 
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist.title;
@@ -154,6 +223,7 @@ async function handleWishlistSubmission() {
       saveBtn.innerText = 'SAVE TO WISHLIST';
       return;
     }
+    setCurrentUser(user);
 
     let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
 
@@ -188,6 +258,7 @@ async function handleWishlistSubmission() {
 document.addEventListener('DOMContentLoaded', () => {
   // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
+  checkSavedUserSession();
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
@@ -203,4 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-wishlist')?.addEventListener('click', openWishlistAuthModal);
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
+  document.getElementById('btn-login')?.addEventListener('click', () => {
+    if (currentUser) {
+      if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
+        logoutUser();
+      }
+    } else {
+      openWishlistAuthModal();
+    }
+  });
 });
