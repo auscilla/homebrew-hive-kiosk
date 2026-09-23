@@ -182,6 +182,22 @@ function openWishlistAuthModal(game = null) {
   if (modal) modal.classList.remove('hidden');
 }
 
+function openLoginModal() {
+  selectedGameForWishlist = null;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = 'Account Login';
+
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
 function closeWishlistAuthModal() {
   const modal = document.getElementById('modal-wishlist-auth');
   if (modal) modal.classList.add('hidden');
