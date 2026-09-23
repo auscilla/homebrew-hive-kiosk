@@ -3,6 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
+let selectedGameForWishlist = null;
 
 async function loadGamesFromSupabase() {
   const { data, error } = await supabaseClient
@@ -72,8 +73,10 @@ function filterCategory(categoryName) {
 }
 
 function openCheckout(gameId) {
-  const selectedGame = GAMES_DATA.find(g => g.id === gameId);
+  const selectedGame = GAMES_DATA.find(g => String(g.id) === String(gameId));
   if (!selectedGame) return;
+
+  selectedGameForWishlist = selectedGame;
 
   document.getElementById('detail-title').innerText = selectedGame.title;
   document.getElementById('detail-price').innerText = `Price: ${selectedGame.price}`;
@@ -96,6 +99,103 @@ function openCheckout(gameId) {
   navigateTo('modal-checkout');
 }
 
+/* ==================== WISHLIST MODAL LOGIC ==================== */
+
+function openWishlistAuthModal() {
+  if (!selectedGameForWishlist) return;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist.title;
+
+  // Clear inputs and error state
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+  
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  // Display modal
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWishlistAuthModal() {
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleWishlistSubmission() {
+  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase(); // Email normalization[cite: 2]
+  const pinInput = document.getElementById('wishlist-pin-input').value.trim();
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  const saveBtn = document.getElementById('btn-save-wishlist');
+
+  // Enforce required email & 4-digit PIN pattern[cite: 2]
+  if (!emailInput || !/^\d{4}$/.test(pinInput)) {
+    if (errorMsg) {
+      errorMsg.innerText = 'Please enter a valid email and 4-digit PIN.';
+      errorMsg.classList.remove('hidden');
+    }
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'SAVING...';
+
+  try {
+    // 1. Authenticate user against Supabase users table[cite: 2]
+    const { data: user, error: loginError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('email', emailInput)
+      .eq('pin', pinInput)
+      .eq('account_type', 'gamer')
+      .single();[cite: 2]
+
+    if (loginError || !user) {
+      if (errorMsg) {
+        errorMsg.innerText = 'Invalid email or PIN. Please try again.';
+        errorMsg.classList.remove('hidden');
+      }
+      saveBtn.disabled = false;
+      saveBtn.innerText = 'SAVE TO WISHLIST';
+      return;
+    }
+
+    // 2. Parse existing wishlist comma-separated string[cite: 2]
+    let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];[cite: 2]
+
+    // Append new game title if not already in wishlist[cite: 2]
+    if (!wishlistArray.includes(selectedGameForWishlist.title)) {
+      wishlistArray.push(selectedGameForWishlist.title);[cite: 2]
+    }
+
+    const updatedWishlist = wishlistArray.join(', ');[cite: 2]
+
+    // 3. Update Supabase record[cite: 2]
+    const { error: updateError } = await supabaseClient
+      .from('users')
+      .update({ wishlist: updatedWishlist })[cite: 2]
+      .eq('id', user.id);[cite: 2]
+
+    if (updateError) throw updateError;
+
+    // Close modal upon successful update
+    closeWishlistAuthModal();
+    alert(`"${selectedGameForWishlist.title}" has been saved to your wishlist!`);
+
+  } catch (err) {
+    console.error('Wishlist update error:', err);
+    if (errorMsg) {
+      errorMsg.innerText = 'Failed to update wishlist. Please try again.';
+      errorMsg.classList.remove('hidden');
+    }
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = 'SAVE TO WISHLIST';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
@@ -111,4 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
   });
+
+  // Wishlist Modal Event Listeners
+  document.getElementById('btn-wishlist')?.addEventListener('click', openWishlistAuthModal);
+  document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
+  document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
 });
