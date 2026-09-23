@@ -75,6 +75,7 @@ function openCheckout(gameId) {
   const selectedGame = GAMES_DATA.find(g => g.id === gameId);
   if (!selectedGame) return;
 
+  selectedGameForWishlist = selectedGame;
   document.getElementById('detail-title').innerText = selectedGame.title;
   document.getElementById('detail-price').innerText = `Price: ${selectedGame.price}`;
   document.getElementById('detail-img').src = selectedGame.image_url;
@@ -95,6 +96,94 @@ function openCheckout(gameId) {
 
   navigateTo('modal-checkout');
 }
+/* ==================== WISHLIST MODAL LOGIC ==================== */
+
+function openWishlistAuthModal() {
+  if (!selectedGameForWishlist) return;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist.title;
+
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+  
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWishlistAuthModal() {
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleWishlistSubmission() {
+  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase();
+  const pinInput = document.getElementById('wishlist-pin-input').value.trim();
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  const saveBtn = document.getElementById('btn-save-wishlist');
+
+  if (!emailInput || !/^\d{4}$/.test(pinInput)) {
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'SAVING...';
+
+  try {
+    const { data: user, error: loginError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('email', emailInput)
+      .eq('pin', pinInput)
+      .eq('account_type', 'gamer')
+      .single();
+
+    if (loginError || !user) {
+      if (errorMsg) {
+        errorMsg.innerText = 'Does Not Match, try again.';
+        errorMsg.classList.remove('hidden');
+      }
+      saveBtn.disabled = false;
+      saveBtn.innerText = 'SAVE TO WISHLIST';
+      return;
+    }
+
+    let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
+
+    if (!wishlistArray.includes(selectedGameForWishlist.title)) {
+      wishlistArray.push(selectedGameForWishlist.title);
+    }
+
+    const updatedWishlist = wishlistArray.join(', ');
+
+    const { error: updateError } = await supabaseClient
+      .from('users')
+      .update({ wishlist: updatedWishlist })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    closeWishlistAuthModal();
+    alert(`"${selectedGameForWishlist.title}" saved to wishlist!`);
+
+  } catch (err) {
+    console.error('Wishlist error:', err);
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = 'SAVE TO WISHLIST';
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Fetch dynamic game list directly from Supabase
@@ -111,4 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
   });
+  document.getElementById('btn-wishlist')?.addEventListener('click', openWishlistAuthModal);
+  document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
+  document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
 });
