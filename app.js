@@ -103,9 +103,9 @@ function setCurrentUser(user) {
   currentUser = user;
   localStorage.setItem('kiosk_user_email', user.email);
   
-  const loginBtn = document.getElementById('btn-login');
-  if (loginBtn) {
-    loginBtn.innerText = `👤 ${user.email.split('@')[0]}`;
+  const loginText = document.getElementById('login-text');
+  if (loginText) {
+    loginText.innerText = user.email.split('@')[0];
   }
 }
 
@@ -113,9 +113,10 @@ function logoutUser() {
   currentUser = null;
   localStorage.removeItem('kiosk_user_email');
   
-  const loginBtn = document.getElementById('btn-login');
-  if (loginBtn) {
-    loginBtn.innerText = 'Login';
+  const loginText = document.getElementById('login-text');
+  if (loginText) {
+    loginText.innerText = 'Login';
+  }
   }
 }
 
