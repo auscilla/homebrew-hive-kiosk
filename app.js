@@ -118,7 +118,6 @@ function logoutUser() {
     loginText.innerText = 'Login';
   }
   }
-}
 
 async function checkSavedUserSession() {
   const savedEmail = localStorage.getItem('kiosk_user_email');
