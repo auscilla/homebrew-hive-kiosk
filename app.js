@@ -1,4 +1,3 @@
-// All 9 Games explicitly mapped to their individual asset folders
 const GAMES_DATA = [
   {
     id: 'birdie-bartender',
@@ -9,9 +8,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/birdie-bartender/cover.png',
     video_url: 'assets/games/birdie-bartender/preview.mp4',
     screenshots: [
-      'assets/games/birdie-bartender/snap1.png',
-      'assets/games/birdie-bartender/snap2.png',
-      'assets/games/birdie-bartender/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -23,9 +22,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/doomslinger-dungeon/cover.png',
     video_url: 'assets/games/doomslinger-dungeon/preview.mp4',
     screenshots: [
-      'assets/games/doomslinger-dungeon/snap1.png',
-      'assets/games/doomslinger-dungeon/snap2.png',
-      'assets/games/doomslinger-dungeon/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -37,9 +36,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/capybara-village/cover.png',
     video_url: 'assets/games/capybara-village/preview.mp4',
     screenshots: [
-      'assets/games/capybara-village/snap1.png',
-      'assets/games/capybara-village/snap2.png',
-      'assets/games/capybara-village/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -51,9 +50,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/disco-elysium/cover.png',
     video_url: 'assets/games/disco-elysium/preview.mp4',
     screenshots: [
-      'assets/games/disco-elysium/snap1.png',
-      'assets/games/disco-elysium/snap2.png',
-      'assets/games/disco-elysium/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -65,9 +64,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/island-deluxe/cover.png',
     video_url: 'assets/games/island-deluxe/preview.mp4',
     screenshots: [
-      'assets/games/island-deluxe/snap1.png',
-      'assets/games/island-deluxe/snap2.png',
-      'assets/games/island-deluxe/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -79,9 +78,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/criss-cross-cove/cover.png',
     video_url: 'assets/games/criss-cross-cove/preview.mp4',
     screenshots: [
-      'assets/games/criss-cross-cove/snap1.png',
-      'assets/games/criss-cross-cove/snap2.png',
-      'assets/games/criss-cross-cove/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -93,9 +92,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/taiyaki-fabulous/cover.png',
     video_url: 'assets/games/taiyaki-fabulous/preview.mp4',
     screenshots: [
-      'assets/games/taiyaki-fabulous/snap1.png',
-      'assets/games/taiyaki-fabulous/snap2.png',
-      'assets/games/taiyaki-fabulous/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -107,9 +106,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/starlight-courier/cover.png',
     video_url: 'assets/games/starlight-courier/preview.mp4',
     screenshots: [
-      'assets/games/starlight-courier/snap1.png',
-      'assets/games/starlight-courier/snap2.png',
-      'assets/games/starlight-courier/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   },
   {
@@ -121,9 +120,9 @@ const GAMES_DATA = [
     image_url: 'assets/games/pixel-pioneer/cover.png',
     video_url: 'assets/games/pixel-pioneer/preview.mp4',
     screenshots: [
-      'assets/games/pixel-pioneer/snap1.png',
-      'assets/games/pixel-pioneer/snap2.png',
-      'assets/games/pixel-pioneer/snap3.png'
+      'assets/brand/snap.png',
+      'assets/brand/snap.png',
+      'assets/brand/snap.png'
     ]
   }
 ];
