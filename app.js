@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logoutUser();
     }
   } else {
-    openWishlistAuthModal();
+    openLoginModal();
   }
 });
 });
