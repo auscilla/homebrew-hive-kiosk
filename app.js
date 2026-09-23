@@ -283,5 +283,4 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       openWishlistAuthModal();
     }
-  });
 });
