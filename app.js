@@ -274,12 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
   document.getElementById('btn-login')?.addEventListener('click', () => {
-    if (currentUser) {
-      if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
-        logoutUser();
-      }
-    } else {
-      openWishlistAuthModal();
-}
-  });
+  if (currentUser) {
+    if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
+      logoutUser();
+    }
+  } else {
+    openWishlistAuthModal();
+  }
+});
 });
