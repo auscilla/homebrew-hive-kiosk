@@ -163,16 +163,15 @@ async function saveGameToUserWishlist(user, gameTitle) {
 }
 /* ==================== WISHLIST MODAL LOGIC ==================== */
 
-function openWishlistAuthModal() {
-  if (!selectedGameForWishlist) return;
-  if (currentUser) {
+function openWishlistAuthModal(game = null) {
+  if (game) selectedGameForWishlist = game;
+  if (currentUser && selectedGameForWishlist) {
     saveGameToUserWishlist(currentUser, selectedGameForWishlist.title);
     return;
   }
 
   const titleSpan = document.getElementById('wishlist-game-title');
-  if (titleSpan) titleSpan.innerText = selectedGameForWishlist.title;
-
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || '';
   document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
   
