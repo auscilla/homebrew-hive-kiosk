@@ -15,7 +15,6 @@ async function loadGamesFromSupabase() {
     return;
   }
 
-  // Attach standard screenshot paths to fetched games
   GAMES_DATA = data.map(game => ({
     ...game,
     screenshots: [
@@ -107,14 +106,12 @@ function openWishlistAuthModal() {
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist.title;
 
-  // Clear inputs and error state
   document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
   
   const errorMsg = document.getElementById('wishlist-error-msg');
   if (errorMsg) errorMsg.classList.add('hidden');
 
-  // Display modal
   const modal = document.getElementById('modal-wishlist-auth');
   if (modal) modal.classList.remove('hidden');
 }
@@ -125,12 +122,11 @@ function closeWishlistAuthModal() {
 }
 
 async function handleWishlistSubmission() {
-  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase(); // Email normalization[cite: 2]
+  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase();[cite: 2]
   const pinInput = document.getElementById('wishlist-pin-input').value.trim();
   const errorMsg = document.getElementById('wishlist-error-msg');
   const saveBtn = document.getElementById('btn-save-wishlist');
 
-  // Enforce required email & 4-digit PIN pattern[cite: 2]
   if (!emailInput || !/^\d{4}$/.test(pinInput)) {
     if (errorMsg) {
       errorMsg.innerText = 'Please enter a valid email and 4-digit PIN.';
@@ -143,7 +139,6 @@ async function handleWishlistSubmission() {
   saveBtn.innerText = 'SAVING...';
 
   try {
-    // 1. Authenticate user against Supabase users table[cite: 2]
     const { data: user, error: loginError } = await supabaseClient
       .from('users')
       .select('*')
@@ -162,17 +157,14 @@ async function handleWishlistSubmission() {
       return;
     }
 
-    // 2. Parse existing wishlist comma-separated string[cite: 2]
     let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];[cite: 2]
 
-    // Append new game title if not already in wishlist[cite: 2]
     if (!wishlistArray.includes(selectedGameForWishlist.title)) {
       wishlistArray.push(selectedGameForWishlist.title);[cite: 2]
     }
 
     const updatedWishlist = wishlistArray.join(', ');[cite: 2]
 
-    // 3. Update Supabase record[cite: 2]
     const { error: updateError } = await supabaseClient
       .from('users')
       .update({ wishlist: updatedWishlist })[cite: 2]
@@ -180,7 +172,6 @@ async function handleWishlistSubmission() {
 
     if (updateError) throw updateError;
 
-    // Close modal upon successful update
     closeWishlistAuthModal();
     alert(`"${selectedGameForWishlist.title}" has been saved to your wishlist!`);
 
@@ -197,7 +188,6 @@ async function handleWishlistSubmission() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
@@ -212,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-landing');
   });
 
-  // Wishlist Modal Event Listeners
   document.getElementById('btn-wishlist')?.addEventListener('click', openWishlistAuthModal);
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
