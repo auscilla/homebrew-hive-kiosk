@@ -12,28 +12,29 @@
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
   <!-- ==================== SCREEN 1: LANDING ==================== -->
-  <div id="screen-landing" class="screen active flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
+<div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
     <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
       Print Your Own Video Game!
     </h1>
 
-    <div class="relative flex flex-col items-center my-auto pointer-events-none">
+    <div class="relative flex flex-col items-center my-auto">
       <!-- Dotted Bee Flight Trail Line -->
+<!-- Dotted Bee Flight Trail Line (Expanded Size) -->
       <svg class="absolute -top-16 -left-44 w-[520px] h-[340px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="3" stroke-dasharray="8 8" />
       </svg>
 
-      <!-- Bee Mascot -->
+      <!-- Bee Mascot (Positioned on the Left Side) -->
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce z-20" />
 
-      <!-- Cartridge Graphic -->
+      <!-- Cartridge Graphic Only (QR Overlay Removed) -->
       <div class="relative w-64 h-72 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
     </div>
 
-    <div class="mb-6 pointer-events-none">
+    <div class="mb-6">
       <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-3">
         With Homebrew Hive
       </h2>
@@ -103,7 +104,7 @@
 
           <div class="flex flex-col gap-2 mt-auto">
             <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">PRINT</button>
-            <button id="btn-wishlist" onclick="openWishlistAuthModal()" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>
+            <button id="btn-wishlist" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>
             <button id="btn-cancel" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>
           </div>
         </div>
@@ -120,44 +121,6 @@
           </div>
 
           <div id="screen-grabs-container" class="grid grid-cols-3 gap-2"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== WISHLIST AUTH MODAL ==================== -->
-  <div id="modal-wishlist-auth" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-6 backdrop-blur-md z-[60]">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
-      <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
-        <h2 class="text-sm font-bold tracking-wide text-amber-400">Save to Wishlist</h2>
-      </div>
-
-      <div class="p-6 flex flex-col gap-4">
-        <p id="wishlist-modal-subtitle" class="text-[10px] text-zinc-300 leading-relaxed text-center">
-          Enter your account details to add <span id="wishlist-game-title" class="text-amber-400 font-bold">this game</span> to your wishlist.
-        </p>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-[9px] uppercase text-zinc-400">Email Address</label>
-          <input type="email" id="wishlist-email-input" placeholder="gamer@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500" />
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-[9px] uppercase text-zinc-400">4-Digit PIN</label>
-          <input type="password" id="wishlist-pin-input" maxlength="4" placeholder="••••" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
-        </div>
-
-        <p id="wishlist-error-msg" class="hidden text-[10px] text-rose-500 text-center font-bold">
-          Invalid email or PIN. Please try again.
-        </p>
-
-        <div class="flex flex-col gap-2 mt-2">
-          <button id="btn-save-wishlist" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg">
-            SAVE TO WISHLIST
-          </button>
-          <button id="btn-cancel-wishlist" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">
-            Cancel
-          </button>
         </div>
       </div>
     </div>
@@ -180,6 +143,7 @@
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-6 right-2 w-8 h-8 animate-pulse" />
     </div>
 
+    <!-- Progress Bar -->
     <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner">
       <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
     </div>
