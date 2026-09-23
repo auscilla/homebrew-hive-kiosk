@@ -191,11 +191,11 @@ function openLoginModal() {
   document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
 
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'LOGIN';
+
   const errorMsg = document.getElementById('wishlist-error-msg');
   if (errorMsg) errorMsg.classList.add('hidden');
-
-  const modal = document.getElementById('modal-wishlist-auth');
-  if (modal) modal.classList.remove('hidden');
 }
 
 function closeWishlistAuthModal() {
@@ -240,6 +240,7 @@ async function handleWishlistSubmission() {
     }
     setCurrentUser(user);
 
+    if (selectedGameForWishlist) {
     let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
 
     if (!wishlistArray.includes(selectedGameForWishlist.title)) {
@@ -257,6 +258,10 @@ async function handleWishlistSubmission() {
 
     closeWishlistAuthModal();
     alert(`"${selectedGameForWishlist.title}" saved to wishlist!`);
+  } else {
+    closeWishlistAuthModal();
+    alert(`Logged in as ${user.email}!`);
+  }
 
   } catch (err) {
     console.error('Wishlist error:', err);
