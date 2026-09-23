@@ -11,17 +11,25 @@
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
   <!-- ==================== SCREEN 1: LANDING ==================== -->
-  <div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
+<div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
     <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
       Print Your Own Video Game!
     </h1>
 
     <div class="relative flex flex-col items-center my-auto">
-      <div class="relative w-64 h-72 flex items-center justify-center">
-        <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="absolute inset-0 w-full h-full object-contain" />
-        <img src="assets/brand/qr-homebrew.png" alt="QR Code" class="w-28 h-28 relative z-10 rounded mt-2" />
+      <!-- Dotted Bee Flight Trail Line -->
+      <svg class="absolute -top-10 -left-16 w-[360px] h-[260px] pointer-events-none z-0 opacity-80" viewBox="0 0 300 200" fill="none">
+        <path d="M 40 100 C 20 20, 150 20, 150 100 C 150 180, 280 180, 260 100 C 240 20, 110 20, 110 100 C 110 180, 40 180, 40 100 Z" 
+              stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 6" />
+      </svg>
+
+      <!-- Bee Mascot (Positioned on the Left Side) -->
+      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce z-20" />
+
+      <!-- Cartridge Graphic Only (QR Overlay Removed) -->
+      <div class="relative w-64 h-72 flex items-center justify-center z-10">
+        <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -right-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce" />
     </div>
 
     <div class="mb-6">
