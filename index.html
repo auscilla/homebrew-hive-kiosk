@@ -18,16 +18,13 @@
     </h1>
 
     <div class="relative flex flex-col items-center my-auto">
-      <!-- Dotted Bee Flight Trail Line (Expanded Size) -->
       <svg class="absolute -top-16 -left-44 w-[520px] h-[340px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="3" stroke-dasharray="8 8" />
       </svg>
 
-      <!-- Bee Mascot (Positioned on the Left Side) -->
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce z-20" />
 
-      <!-- Cartridge Graphic Only -->
       <div class="relative w-64 h-72 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
@@ -43,7 +40,6 @@
 
   <!-- ==================== SCREEN 2: BROWSE GRID ==================== -->
   <div id="screen-browse" class="screen hidden flex-col h-full bg-zinc-900 p-6">
-    <!-- Top Nav Bar -->
     <div class="flex items-center justify-between mb-4 bg-zinc-800/90 p-3 rounded-xl border border-zinc-700">
       <button id="btn-login" class="bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600 font-bold">
         <span id="login-text">Login</span>
@@ -64,7 +60,6 @@
       </button>
     </div>
 
-    <!-- Category Tabs -->
     <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
       <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs">All Games</button>
       <button onclick="filterCategory('New')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">New</button>
@@ -74,7 +69,6 @@
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
 
-    <!-- 3x3 Grid -->
     <div id="game-grid" class="grid grid-cols-3 gap-4 overflow-y-auto flex-1 pr-2"></div>
   </div>
 
@@ -122,6 +116,27 @@
     </div>
   </div>
 
+  <!-- SCREENSHOT LIGHTBOX MODAL -->
+  <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[70] p-6 backdrop-blur-md">
+    <!-- Close Button Top-Left -->
+    <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">
+      ✕
+    </button>
+
+    <!-- Main Lightbox Image with Left & Right Nav Arrows -->
+    <div class="relative flex items-center justify-center max-w-3xl w-full">
+      <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
+        ‹
+      </button>
+
+      <img id="lightbox-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-2xl border-4 border-zinc-700 shadow-2xl" alt="Preview Large" />
+
+      <button id="btn-lightbox-next" class="absolute right-2 md:-right-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
+        ›
+      </button>
+    </div>
+  </div>
+
   <!-- ==================== SCREEN: INSERT CARTRIDGE ==================== -->
   <div id="screen-insert-cartridge" class="screen hidden flex-col items-center justify-between h-full p-8 text-center bg-zinc-950">
     <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">
@@ -159,7 +174,6 @@
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-6 right-2 w-8 h-8 animate-pulse" />
     </div>
 
-    <!-- Progress Bar -->
     <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner">
       <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
     </div>
