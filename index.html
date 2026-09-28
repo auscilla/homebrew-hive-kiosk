@@ -46,25 +46,23 @@
   <div id="screen-browse" class="screen hidden flex-col h-full bg-zinc-900 p-6">
     <!-- Top Nav Bar -->
     <div class="flex items-center justify-between mb-4 bg-zinc-800/90 p-3 rounded-xl border border-zinc-700">
-      <button id="btn-login" class="flex items-center gap-2 bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600">
-        <img src="assets/brand/icon-login.png" class="w-4 h-4" alt="" />
+      <button id="btn-login" class="bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600 font-bold">
         <span id="login-text">Login</span>
       </button>
-     <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
-  <input 
-    type="text" 
-    id="search-input" 
-    placeholder="SEARCH GAMES..." 
-    class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider"
-  />
-</div>
-      <div class="flex items-center gap-4">
-        <img src="assets/brand/bee-flying.png" alt="Bee" class="w-8 h-8" />
-        <button class="flex flex-col items-center bg-zinc-700 px-3 py-1 rounded-lg text-[10px] hover:bg-zinc-600">
-          <img src="assets/brand/icon-print.png" class="w-4 h-4" alt="" />
-          <span>PRINT</span>
-        </button>
+
+      <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="SEARCH GAMES..." 
+          class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider"
+        />
       </div>
+
+      <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
+        <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
+        <span>HOME</span>
+      </button>
     </div>
 
     <!-- Category Tabs -->
