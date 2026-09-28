@@ -7,6 +7,10 @@ let currentUser = null;
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
 
+// Lightbox variables
+let currentLightboxImages = [];
+let currentLightboxIndex = 0;
+
 async function loadGamesFromSupabase() {
   const { data, error } = await supabaseClient
     .from('games')
@@ -31,7 +35,6 @@ async function loadGamesFromSupabase() {
 }
 
 function navigateTo(screenId) {
-  // If navigating back home, auto logout session
   if (screenId === 'screen-landing') {
     logoutUser();
   }
@@ -109,14 +112,52 @@ function openCheckout(gameId) {
     video.load();
   }
 
+  currentLightboxImages = selectedGame.screenshots || [];
+
   const container = document.getElementById('screen-grabs-container');
   if (container) {
-    container.innerHTML = selectedGame.screenshots.map(src => `
-      <img src="${src}" class="bg-zinc-900 rounded-lg h-14 w-full object-cover border border-zinc-700" alt="Grab" />
+    container.innerHTML = currentLightboxImages.map((src, index) => `
+      <img src="${src}" onclick="openLightbox(${index})" class="bg-zinc-900 rounded-lg h-14 w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
     `).join('');
   }
 
   navigateTo('modal-checkout');
+}
+
+/* ==================== LIGHTBOX LOGIC ==================== */
+
+function openLightbox(index) {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = index;
+
+  const lightboxImg = document.getElementById('lightbox-img');
+  if (lightboxImg) {
+    lightboxImg.src = currentLightboxImages[currentLightboxIndex];
+  }
+
+  const lightbox = document.getElementById('modal-lightbox');
+  if (lightbox) {
+    lightbox.classList.remove('hidden');
+  }
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('modal-lightbox');
+  if (lightbox) {
+    lightbox.classList.add('hidden');
+  }
+}
+
+function lightboxNext() {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
+  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
+}
+
+function lightboxPrev() {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length;
+  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
 }
 
 /* ==================== SESSION & LOGIN LOGIC ==================== */
@@ -324,7 +365,6 @@ async function prepareAndPrintGame(game) {
     const romBuffer = await response.arrayBuffer();
     console.log(`Successfully loaded ${romBuffer.byteLength} bytes for flashing.`);
 
-    // Store binary ROM buffer globally for hardware flasher
     window.currentRomBuffer = romBuffer;
 
   } catch (err) {
@@ -354,6 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
 
+  document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
+  document.getElementById('btn-lightbox-next')?.addEventListener('click', lightboxNext);
+  document.getElementById('btn-lightbox-prev')?.addEventListener('click', lightboxPrev);
+
   document.getElementById('btn-login')?.addEventListener('click', () => {
     if (currentUser) {
       if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
@@ -374,12 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
     }
 
-    // Load ROM binary directly from Supabase Storage
     if (selectedGameForWishlist) {
       await prepareAndPrintGame(selectedGameForWishlist);
     }
 
-    // Auto logout user session upon printing
     logoutUser();
     
     navigateTo('screen-progress');
