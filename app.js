@@ -353,22 +353,45 @@ async function handleWishlistSubmission() {
 async function prepareAndPrintGame(game) {
   if (!game?.rom_url) {
     console.error('No ROM URL found for this game in Supabase.');
+    navigateTo('screen-error');
     return;
   }
 
-  console.log(`Fetching ROM for ${game.title || game.name} from: ${game.rom_url}`);
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) progressBar.style.width = '10%';
 
   try {
-    const response = await fetch(game.rom_url);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const romBuffer = await response.arrayBuffer();
-    console.log(`Successfully loaded ${romBuffer.byteLength} bytes for flashing.`);
+    console.log(`Sending flash request for ${game.title || game.name}...`);
+    if (progressBar) progressBar.style.width = '40%';
 
-    window.currentRomBuffer = romBuffer;
+    // Call local Python bridge running on port 5000
+    const response = await fetch('http://localhost:5000/flash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rom_url: game.rom_url })
+    });
+
+    if (progressBar) progressBar.style.width = '80%';
+
+    const result = await response.json();
+
+    if (response.ok && result.status === 'success') {
+      if (progressBar) progressBar.style.width = '100%';
+      console.log('Flash Output:', result.output);
+      
+      // Wait 1.5 seconds so the user sees 100% complete before returning home
+      setTimeout(() => {
+        navigateTo('screen-landing');
+      }, 1500);
+
+    } else {
+      console.error('Flashing failed:', result.message || result.error);
+      navigateTo('screen-error');
+    }
 
   } catch (err) {
-    console.error('Failed to download ROM file:', err);
+    console.error('Network or hardware error during flash:', err);
+    navigateTo('screen-error');
   }
 }
 
@@ -418,13 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
     }
 
+    // Show progress screen immediately
+    navigateTo('screen-progress');
+
+    // Trigger hardware flash via Python bridge
     if (selectedGameForWishlist) {
       await prepareAndPrintGame(selectedGameForWishlist);
+    } else {
+      navigateTo('screen-error');
     }
 
     logoutUser();
-    
-    navigateTo('screen-progress');
   });
 
   document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
