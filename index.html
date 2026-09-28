@@ -12,14 +12,13 @@
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
   <!-- ==================== SCREEN 1: LANDING ==================== -->
-<div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
+  <div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
     <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
       Print Your Own Video Game!
     </h1>
 
     <div class="relative flex flex-col items-center my-auto">
-      <!-- Dotted Bee Flight Trail Line -->
-<!-- Dotted Bee Flight Trail Line (Expanded Size) -->
+      <!-- Dotted Bee Flight Trail Line (Expanded Size) -->
       <svg class="absolute -top-16 -left-44 w-[520px] h-[340px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="3" stroke-dasharray="8 8" />
@@ -28,7 +27,7 @@
       <!-- Bee Mascot (Positioned on the Left Side) -->
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce z-20" />
 
-      <!-- Cartridge Graphic Only (QR Overlay Removed) -->
+      <!-- Cartridge Graphic Only -->
       <div class="relative w-64 h-72 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
@@ -75,7 +74,7 @@
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
 
-    <!-- 3x3 Grid (Displays all 9 Games) -->
+    <!-- 3x3 Grid -->
     <div id="game-grid" class="grid grid-cols-3 gap-4 overflow-y-auto flex-1 pr-2"></div>
   </div>
 
@@ -123,10 +122,30 @@
     </div>
   </div>
 
+  <!-- ==================== SCREEN: INSERT CARTRIDGE ==================== -->
+  <div id="screen-insert-cartridge" class="screen hidden flex-col items-center justify-between h-full p-8 text-center bg-zinc-950">
+    <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">
+      PLEASE INSERT CARTRIDGE
+    </h1>
+
+    <div class="relative max-w-sm my-auto flex items-center justify-center">
+      <img src="assets/brand/insert-cartridge.png" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[45vh] object-contain rounded-2xl shadow-2xl border-2 border-zinc-700" />
+    </div>
+
+    <div class="flex flex-col gap-3 w-full max-w-xs mb-4">
+      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
+        DONE
+      </button>
+      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">
+        GO BACK
+      </button>
+    </div>
+  </div>
+
   <!-- ==================== SCREEN 4: PROGRESS ==================== -->
   <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-circuit relative">
     <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
-    
+
     <div class="relative mb-12">
       <div class="w-56 h-64 relative flex items-center justify-center">
         <img src="assets/brand/cartridge-stack.png" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
@@ -134,7 +153,7 @@
           GAME TITLE
         </div>
       </div>
-      
+
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-6 -left-6 w-8 h-8 animate-pulse" />
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-4 -right-8 w-6 h-6 animate-bounce" />
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-6 right-2 w-8 h-8 animate-pulse" />
@@ -156,6 +175,7 @@
       Return to Home
     </button>
   </div>
+
   <!-- WISHLIST POPUP MODAL -->
   <div id="modal-wishlist-auth" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-6 backdrop-blur-md z-[60]">
     <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
