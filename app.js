@@ -19,6 +19,7 @@ async function loadGamesFromSupabase() {
 
   GAMES_DATA = data.map(game => ({
     ...game,
+    rom_url: game.rom_url || '',
     screenshots: [
       'assets/brand/snap.png',
       'assets/brand/snap.png',
@@ -188,7 +189,6 @@ async function saveGameToUserWishlist(user, gameTitle) {
 function openWishlistAuthModal(game = null) {
   if (game) selectedGameForWishlist = game;
 
-  // If already logged in, save game directly without prompting login
   if (currentUser && selectedGameForWishlist) {
     saveGameToUserWishlist(currentUser, selectedGameForWishlist.title || selectedGameForWishlist.name);
     return;
@@ -307,6 +307,31 @@ async function handleWishlistSubmission() {
   }
 }
 
+/* ==================== ROM PRINTING & FLASHING LOGIC ==================== */
+
+async function prepareAndPrintGame(game) {
+  if (!game?.rom_url) {
+    console.error('No ROM URL found for this game in Supabase.');
+    return;
+  }
+
+  console.log(`Fetching ROM for ${game.title || game.name} from: ${game.rom_url}`);
+
+  try {
+    const response = await fetch(game.rom_url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const romBuffer = await response.arrayBuffer();
+    console.log(`Successfully loaded ${romBuffer.byteLength} bytes for flashing.`);
+
+    // Store binary ROM buffer globally for hardware flasher
+    window.currentRomBuffer = romBuffer;
+
+  } catch (err) {
+    console.error('Failed to download ROM file:', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadGamesFromSupabase();
   checkSavedUserSession();
@@ -343,13 +368,18 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-insert-cartridge');
   });
 
-  document.getElementById('btn-cartridge-done')?.addEventListener('click', () => {
+  document.getElementById('btn-cartridge-done')?.addEventListener('click', async () => {
     const cartTitle = document.getElementById('printing-cart-title');
     if (cartTitle && selectedGameForWishlist) {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
     }
-    
-    // Auto logout user session upon printing a game
+
+    // Load ROM binary directly from Supabase Storage
+    if (selectedGameForWishlist) {
+      await prepareAndPrintGame(selectedGameForWishlist);
+    }
+
+    // Auto logout user session upon printing
     logoutUser();
     
     navigateTo('screen-progress');
