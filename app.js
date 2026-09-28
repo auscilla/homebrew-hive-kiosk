@@ -55,7 +55,11 @@ function renderGames(gamesList) {
   `).join('');
 }
 
+let currentCategory = 'all';
+
 function filterCategory(categoryName) {
+  currentCategory = categoryName;
+
   document.querySelectorAll('.category-btn').forEach(btn => {
     if (btn.innerText.toLowerCase() === categoryName.toLowerCase() || (categoryName === 'all' && btn.innerText === 'All Games')) {
       btn.className = 'category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs';
@@ -64,12 +68,24 @@ function filterCategory(categoryName) {
     }
   });
 
-  if (categoryName === 'all') {
-    renderGames(GAMES_DATA);
-  } else {
-    const filtered = GAMES_DATA.filter(g => g.category && g.category.toLowerCase() === categoryName.toLowerCase());
-    renderGames(filtered);
-  }
+  applyFilters();
+}
+
+function applyFilters() {
+  const query = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
+
+  const filtered = GAMES_DATA.filter(game => {
+    const matchesCategory = currentCategory === 'all' || 
+      (game.category && game.category.toLowerCase() === currentCategory.toLowerCase());
+
+    const matchesSearch = !query || 
+      game.title.toLowerCase().includes(query) || 
+      (game.description && game.description.toLowerCase().includes(query));
+
+    return matchesCategory && matchesSearch;
+  });
+
+  renderGames(filtered);
 }
 
 function openCheckout(gameId) {
@@ -279,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
   checkSavedUserSession();
-
+document.getElementById('search-input')?.addEventListener('input', applyFilters);
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
   });
