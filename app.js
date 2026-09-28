@@ -365,7 +365,7 @@ async function prepareAndPrintGame(game) {
     if (progressBar) progressBar.style.width = '40%';
 
     // Call local Python bridge running on port 5000
-    const response = await fetch('http://localhost:5000/flash', {
+    const response = await fetch('http://127.0.0.1:5000/flash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rom_url: game.rom_url })
