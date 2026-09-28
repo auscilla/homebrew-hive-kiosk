@@ -76,14 +76,11 @@ function applyFilters() {
 
   const filtered = GAMES_DATA.filter(game => {
     const gameTitle = (game.title || game.name || '').toLowerCase();
-    const gameDesc = (game.description || '').toLowerCase();
 
     const matchesCategory = currentCategory === 'all' || 
       (game.category && game.category.toLowerCase() === currentCategory.toLowerCase());
 
-    const matchesSearch = !query || 
-      gameTitle.includes(query) || 
-      gameDesc.includes(query);
+    const matchesSearch = !query || gameTitle.includes(query);
 
     return matchesCategory && matchesSearch;
   });
