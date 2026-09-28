@@ -4,6 +4,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
 let currentUser = null;
+let selectedGameForWishlist = null;
+let currentCategory = 'all';
 
 async function loadGamesFromSupabase() {
   const { data, error } = await supabaseClient
@@ -43,19 +45,17 @@ function navigateTo(screenId) {
 function renderGames(gamesList) {
   const grid = document.getElementById('game-grid');
   if (!grid) return;
-  
+
   grid.innerHTML = gamesList.map(game => `
     <div onclick="openCheckout('${game.id}')" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
-      <img src="${game.image_url}" alt="${game.title}" class="w-full h-28 object-cover rounded-lg mb-2 bg-zinc-950" />
+      <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full h-28 object-cover rounded-lg mb-2 bg-zinc-950" />
       <div>
-        <h4 class="text-[11px] font-bold text-amber-400 mb-1 leading-tight">${game.title}</h4>
+        <h4 class="text-[11px] font-bold text-amber-400 mb-1 leading-tight">${game.title || game.name}</h4>
         <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${game.description}</p>
       </div>
     </div>
   `).join('');
 }
-
-let currentCategory = 'all';
 
 function filterCategory(categoryName) {
   currentCategory = categoryName;
@@ -93,8 +93,8 @@ function openCheckout(gameId) {
   if (!selectedGame) return;
 
   selectedGameForWishlist = selectedGame;
-  document.getElementById('detail-title').innerText = selectedGame.title;
-  document.getElementById('detail-price').innerText = `Price: ${selectedGame.price}`;
+  document.getElementById('detail-title').innerText = selectedGame.title || selectedGame.name;
+  document.getElementById('detail-price').innerText = `Price: ${selectedGame.price || '$0.00'}`;
   document.getElementById('detail-img').src = selectedGame.image_url;
 
   const video = document.getElementById('preview-video');
@@ -113,12 +113,13 @@ function openCheckout(gameId) {
 
   navigateTo('modal-checkout');
 }
+
 /* ==================== SESSION & LOGIN LOGIC ==================== */
 
 function setCurrentUser(user) {
   currentUser = user;
   localStorage.setItem('kiosk_user_email', user.email);
-  
+
   const loginText = document.getElementById('login-text');
   if (loginText) {
     loginText.innerText = user.email.split('@')[0];
@@ -128,12 +129,12 @@ function setCurrentUser(user) {
 function logoutUser() {
   currentUser = null;
   localStorage.removeItem('kiosk_user_email');
-  
+
   const loginText = document.getElementById('login-text');
   if (loginText) {
     loginText.innerText = 'Login';
   }
-  }
+}
 
 async function checkSavedUserSession() {
   const savedEmail = localStorage.getItem('kiosk_user_email');
@@ -177,20 +178,21 @@ async function saveGameToUserWishlist(user, gameTitle) {
     alert('Failed to save to wishlist. Please try again.');
   }
 }
+
 /* ==================== WISHLIST MODAL LOGIC ==================== */
 
 function openWishlistAuthModal(game = null) {
   if (game) selectedGameForWishlist = game;
   if (currentUser && selectedGameForWishlist) {
-    saveGameToUserWishlist(currentUser, selectedGameForWishlist.title);
+    saveGameToUserWishlist(currentUser, selectedGameForWishlist.title || selectedGameForWishlist.name);
     return;
   }
 
   const titleSpan = document.getElementById('wishlist-game-title');
-  if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || '';
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
   document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
-  
+
   const errorMsg = document.getElementById('wishlist-error-msg');
   if (errorMsg) errorMsg.classList.add('hidden');
 
@@ -257,27 +259,28 @@ async function handleWishlistSubmission() {
     setCurrentUser(user);
 
     if (selectedGameForWishlist) {
-    let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
+      let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
 
-    if (!wishlistArray.includes(selectedGameForWishlist.title)) {
-      wishlistArray.push(selectedGameForWishlist.title);
+      const targetTitle = selectedGameForWishlist.title || selectedGameForWishlist.name;
+      if (!wishlistArray.includes(targetTitle)) {
+        wishlistArray.push(targetTitle);
+      }
+
+      const updatedWishlist = wishlistArray.join(', ');
+
+      const { error: updateError } = await supabaseClient
+        .from('users')
+        .update({ wishlist: updatedWishlist })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      closeWishlistAuthModal();
+      alert(`"${targetTitle}" saved to wishlist!`);
+    } else {
+      closeWishlistAuthModal();
+      alert(`Logged in as ${user.email}!`);
     }
-
-    const updatedWishlist = wishlistArray.join(', ');
-
-    const { error: updateError } = await supabaseClient
-      .from('users')
-      .update({ wishlist: updatedWishlist })
-      .eq('id', user.id);
-
-    if (updateError) throw updateError;
-
-    closeWishlistAuthModal();
-    alert(`"${selectedGameForWishlist.title}" saved to wishlist!`);
-  } else {
-    closeWishlistAuthModal();
-    alert(`Logged in as ${user.email}!`);
-  }
 
   } catch (err) {
     console.error('Wishlist error:', err);
@@ -295,7 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
   checkSavedUserSession();
-document.getElementById('search-input')?.addEventListener('input', applyFilters);
+
+  // Search input listener
+  document.getElementById('search-input')?.addEventListener('input', applyFilters);
+
+  // Screen navigation listeners
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
   });
@@ -307,16 +314,35 @@ document.getElementById('search-input')?.addEventListener('input', applyFilters)
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
   });
-  document.getElementById('btn-wishlist')?.addEventListener('click', openWishlistAuthModal);
+
+  document.getElementById('btn-wishlist')?.addEventListener('click', () => openWishlistAuthModal());
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
+
   document.getElementById('btn-login')?.addEventListener('click', () => {
-  if (currentUser) {
-    if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
-      logoutUser();
+    if (currentUser) {
+      if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
+        logoutUser();
+      }
+    } else {
+      openLoginModal();
     }
-  } else {
-    openLoginModal();
-  }
-});
+  });
+
+  // Insert Cartridge Screen Listeners
+  document.getElementById('btn-start-print')?.addEventListener('click', () => {
+    navigateTo('screen-insert-cartridge');
+  });
+
+  document.getElementById('btn-cartridge-done')?.addEventListener('click', () => {
+    const cartTitle = document.getElementById('printing-cart-title');
+    if (cartTitle && selectedGameForWishlist) {
+      cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
+    }
+    navigateTo('screen-progress');
+  });
+
+  document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
+    navigateTo('modal-checkout');
+  });
 });
