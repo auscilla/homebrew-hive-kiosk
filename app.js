@@ -75,12 +75,15 @@ function applyFilters() {
   const query = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
 
   const filtered = GAMES_DATA.filter(game => {
+    const gameTitle = (game.title || game.name || '').toLowerCase();
+    const gameDesc = (game.description || '').toLowerCase();
+
     const matchesCategory = currentCategory === 'all' || 
       (game.category && game.category.toLowerCase() === currentCategory.toLowerCase());
 
     const matchesSearch = !query || 
-      game.title.toLowerCase().includes(query) || 
-      (game.description && game.description.toLowerCase().includes(query));
+      gameTitle.includes(query) || 
+      gameDesc.includes(query);
 
     return matchesCategory && matchesSearch;
   });
