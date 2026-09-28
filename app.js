@@ -17,7 +17,6 @@ async function loadGamesFromSupabase() {
     return;
   }
 
-  // Attach standard screenshot paths to fetched games
   GAMES_DATA = data.map(game => ({
     ...game,
     screenshots: [
@@ -31,6 +30,11 @@ async function loadGamesFromSupabase() {
 }
 
 function navigateTo(screenId) {
+  // If navigating back home, auto logout session
+  if (screenId === 'screen-landing') {
+    logoutUser();
+  }
+
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.add('hidden');
     s.classList.remove('active');
@@ -183,6 +187,8 @@ async function saveGameToUserWishlist(user, gameTitle) {
 
 function openWishlistAuthModal(game = null) {
   if (game) selectedGameForWishlist = game;
+
+  // If already logged in, save game directly without prompting login
   if (currentUser && selectedGameForWishlist) {
     saveGameToUserWishlist(currentUser, selectedGameForWishlist.title || selectedGameForWishlist.name);
     return;
@@ -190,8 +196,12 @@ function openWishlistAuthModal(game = null) {
 
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
+  
   document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
+
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'SAVE TO WISHLIST';
 
   const errorMsg = document.getElementById('wishlist-error-msg');
   if (errorMsg) errorMsg.classList.add('hidden');
@@ -214,6 +224,9 @@ function openLoginModal() {
 
   const errorMsg = document.getElementById('wishlist-error-msg');
   if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
 }
 
 function closeWishlistAuthModal() {
@@ -236,7 +249,7 @@ async function handleWishlistSubmission() {
   }
 
   saveBtn.disabled = true;
-  saveBtn.innerText = 'SAVING...';
+  saveBtn.innerText = 'PROCESSING...';
 
   try {
     const { data: user, error: loginError } = await supabaseClient
@@ -253,15 +266,16 @@ async function handleWishlistSubmission() {
         errorMsg.classList.remove('hidden');
       }
       saveBtn.disabled = false;
-      saveBtn.innerText = 'SAVE TO WISHLIST';
+      saveBtn.innerText = selectedGameForWishlist ? 'SAVE TO WISHLIST' : 'LOGIN';
       return;
     }
+
     setCurrentUser(user);
 
     if (selectedGameForWishlist) {
       let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
-
       const targetTitle = selectedGameForWishlist.title || selectedGameForWishlist.name;
+      
       if (!wishlistArray.includes(targetTitle)) {
         wishlistArray.push(targetTitle);
       }
@@ -283,26 +297,22 @@ async function handleWishlistSubmission() {
     }
 
   } catch (err) {
-    console.error('Wishlist error:', err);
+    console.error('Wishlist/Login error:', err);
     if (errorMsg) {
       errorMsg.innerText = 'Does Not Match, try again.';
       errorMsg.classList.remove('hidden');
     }
   } finally {
     saveBtn.disabled = false;
-    saveBtn.innerText = 'SAVE TO WISHLIST';
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Fetch dynamic game list directly from Supabase
   loadGamesFromSupabase();
   checkSavedUserSession();
 
-  // Search input listener
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
 
-  // Screen navigation listeners
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
   });
@@ -329,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Insert Cartridge Screen Listeners
   document.getElementById('btn-start-print')?.addEventListener('click', () => {
     navigateTo('screen-insert-cartridge');
   });
@@ -339,6 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cartTitle && selectedGameForWishlist) {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
     }
+    
+    // Auto logout user session upon printing a game
+    logoutUser();
+    
     navigateTo('screen-progress');
   });
 
