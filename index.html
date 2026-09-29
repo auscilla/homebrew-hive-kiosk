@@ -18,12 +18,12 @@
     </h1>
 
     <div class="relative flex flex-col items-center my-auto">
-      <svg class="absolute -top-16 -left-44 w-[520px] h-[340px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
+      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[220px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
-              stroke="#fbbf24" stroke-width="3" stroke-dasharray="8 8" />
+              stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
 
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-12 top-1/2 -translate-y-1/2 w-14 h-14 animate-bounce z-20" />
+      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
 
       <div class="relative w-64 h-72 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
@@ -185,23 +185,29 @@
   <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-circuit relative">
     <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
 
-    <div class="relative mb-12">
-      <div class="w-56 h-64 relative flex items-center justify-center">
+    <div class="relative mb-12 flex flex-col items-center justify-center">
+      <!-- Scaled flight path vector closely wrapping the printing stack -->
+      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[260px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
+        <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
+              stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
+      </svg>
+
+      <div class="w-56 h-64 relative flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-stack.png" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
         <div id="printing-cart-title" class="relative z-10 bg-zinc-950/90 text-amber-400 text-[10px] p-2 rounded max-w-[130px] text-center font-bold truncate border border-amber-500/50">
           GAME TITLE
         </div>
       </div>
 
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-6 -left-6 w-8 h-8 animate-pulse" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-4 -right-8 w-6 h-6 animate-bounce" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-6 right-2 w-8 h-8 animate-pulse" />
+      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-4 -left-4 w-8 h-8 animate-pulse z-20" />
+      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-2 -right-4 w-6 h-6 animate-bounce z-20" />
+      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-4 right-2 w-8 h-8 animate-pulse z-20" />
     </div>
 
-    <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner">
+    <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner z-10">
       <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
     </div>
-    <div class="mt-4 text-xs tracking-widest text-zinc-400">Loading...</div>
+    <div class="mt-4 text-xs tracking-widest text-zinc-400 z-10">Loading...</div>
   </div>
 
   <!-- ==================== SCREEN 5: ERROR ==================== -->
