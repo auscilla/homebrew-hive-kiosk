@@ -170,6 +170,12 @@ function setCurrentUser(user) {
   if (loginText) {
     loginText.innerText = user.email.split('@')[0];
   }
+
+  // Show Wishlist Button Next to User Name
+  const wishlistBtn = document.getElementById('btn-user-wishlist');
+  if (wishlistBtn) {
+    wishlistBtn.classList.remove('hidden');
+  }
 }
 
 function logoutUser() {
@@ -180,6 +186,14 @@ function logoutUser() {
   if (loginText) {
     loginText.innerText = 'Login';
   }
+
+  // Hide Wishlist Button
+  const wishlistBtn = document.getElementById('btn-user-wishlist');
+  if (wishlistBtn) {
+    wishlistBtn.classList.add('hidden');
+  }
+
+  closeUserWishlistView();
 }
 
 async function checkSavedUserSession() {
@@ -223,6 +237,62 @@ async function saveGameToUserWishlist(user, gameTitle) {
   } else {
     alert('Failed to save to wishlist. Please try again.');
   }
+}
+
+/* ==================== WISHLIST VIEW MODAL ==================== */
+
+async function openUserWishlistView() {
+  if (!currentUser) return;
+
+  const modal = document.getElementById('modal-wishlist-view');
+  const container = document.getElementById('wishlist-items-container');
+  if (!modal || !container) return;
+
+  container.innerHTML = '<div class="col-span-3 text-center text-xs text-zinc-400 py-8">Loading wishlist...</div>';
+  modal.classList.remove('hidden');
+
+  // Query latest wishlist string from Supabase
+  try {
+    const { data: user, error } = await supabaseClient
+      .from('users')
+      .select('wishlist')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (error || !user) {
+      container.innerHTML = '<div class="col-span-3 text-center text-xs text-rose-500 py-8">Failed to load wishlist.</div>';
+      return;
+    }
+
+    const savedTitles = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
+
+    if (savedTitles.length === 0) {
+      container.innerHTML = '<div class="col-span-3 text-center text-xs text-zinc-400 py-8">Your wishlist is currently empty.</div>';
+      return;
+    }
+
+    // Match saved titles to loaded GAMES_DATA
+    const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
+
+    container.innerHTML = wishlistGames.map(game => `
+      <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
+        <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full h-24 object-cover rounded-lg mb-2 bg-zinc-950" />
+        <div>
+          <h4 class="text-[10px] font-bold text-amber-400 leading-tight mb-1">${game.title || game.name}</h4>
+          <p class="text-[8px] text-zinc-400 leading-tight">${game.price || '$0.00'}</p>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error('Error opening user wishlist:', err);
+    container.innerHTML = '<div class="col-span-3 text-center text-xs text-rose-500 py-8">Error loading wishlist.</div>';
+  }
+}
+
+function closeUserWishlistView() {
+  const modal = document.getElementById('modal-wishlist-view');
+  if (modal) modal.classList.add('hidden');
 }
 
 /* ==================== WISHLIST MODAL LOGIC ==================== */
@@ -412,6 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
   });
+
+  document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
+  document.getElementById('btn-close-wishlist-view')?.addEventListener('click', closeUserWishlistView);
 
   document.getElementById('btn-wishlist')?.addEventListener('click', () => openWishlistAuthModal());
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
