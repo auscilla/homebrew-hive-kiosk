@@ -292,7 +292,7 @@ async function removeFromWishlist(gameTitle) {
   if (!error) {
     currentUser.wishlist = updatedWishlist;
     updateWishlistButtonUI();
-    openUserWishlistView(); // Re-render wishlist modal
+    openUserWishlistView();
   } else {
     console.error('Failed to remove game from wishlist:', error);
     alert('Failed to remove game. Please try again.');
@@ -490,8 +490,8 @@ async function prepareAndPrintGame(game) {
       console.log('Flash Output:', result.output);
       
       setTimeout(() => {
-        navigateTo('screen-landing');
-      }, 1500);
+        navigateTo('screen-success');
+      }, 1000);
 
     } else {
       console.error('Flashing failed:', result.message || result.error);
@@ -520,6 +520,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-home')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-label')?.addEventListener('click', () => {
+    alert('Printing label...');
   });
 
   document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
