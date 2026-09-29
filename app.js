@@ -56,7 +56,7 @@ function renderGames(gamesList) {
 
   grid.innerHTML = gamesList.map(game => `
     <div onclick="openCheckout('${game.id}')" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
-      <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full h-28 object-cover rounded-lg mb-2 bg-zinc-950" />
+      <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
       <div>
         <h4 class="text-[11px] font-bold text-amber-400 mb-1 leading-tight">${game.title || game.name}</h4>
         <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${game.description}</p>
@@ -121,9 +121,7 @@ function openCheckout(gameId) {
     `).join('');
   }
 
-  // Update modal wishlist button appearance according to current status
   updateWishlistButtonUI();
-
   navigateTo('modal-checkout');
 }
 
@@ -143,11 +141,9 @@ function updateWishlistButtonUI() {
   const inWishlist = isGameInUserWishlist(title);
 
   if (inWishlist) {
-    // Grey state when saved to wishlist
     wishlistBtn.className = 'bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs transition-colors';
     wishlistBtn.innerText = 'Wishlist';
   } else {
-    // Gold/Amber state when NOT in wishlist
     wishlistBtn.className = 'bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs transition-colors';
     wishlistBtn.innerText = 'Wishlist';
   }
@@ -156,7 +152,6 @@ function updateWishlistButtonUI() {
 async function toggleGameWishlistStatus() {
   if (!selectedGameForWishlist) return;
 
-  // If user is not logged in, prompt authentication modal
   if (!currentUser) {
     openWishlistAuthModal(selectedGameForWishlist);
     return;
@@ -166,10 +161,8 @@ async function toggleGameWishlistStatus() {
   let wishlistArray = currentUser.wishlist ? currentUser.wishlist.split(', ').filter(Boolean) : [];
 
   if (wishlistArray.includes(title)) {
-    // Remove from wishlist
     wishlistArray = wishlistArray.filter(t => t !== title);
   } else {
-    // Add to wishlist
     wishlistArray.push(title);
   }
 
@@ -284,6 +277,28 @@ async function checkSavedUserSession() {
 
 /* ==================== WISHLIST VIEW MODAL ==================== */
 
+async function removeFromWishlist(gameTitle) {
+  if (!currentUser) return;
+
+  let wishlistArray = currentUser.wishlist ? currentUser.wishlist.split(', ').filter(Boolean) : [];
+  wishlistArray = wishlistArray.filter(t => t !== gameTitle);
+  const updatedWishlist = wishlistArray.join(', ');
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ wishlist: updatedWishlist })
+    .eq('id', currentUser.id);
+
+  if (!error) {
+    currentUser.wishlist = updatedWishlist;
+    updateWishlistButtonUI();
+    openUserWishlistView(); // Re-render wishlist modal
+  } else {
+    console.error('Failed to remove game from wishlist:', error);
+    alert('Failed to remove game. Please try again.');
+  }
+}
+
 async function openUserWishlistView() {
   if (!currentUser) return;
 
@@ -306,6 +321,7 @@ async function openUserWishlistView() {
       return;
     }
 
+    currentUser.wishlist = user.wishlist || '';
     const savedTitles = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
 
     if (savedTitles.length === 0) {
@@ -315,15 +331,21 @@ async function openUserWishlistView() {
 
     const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
 
-    container.innerHTML = wishlistGames.map(game => `
-      <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
-        <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full h-24 object-cover rounded-lg mb-2 bg-zinc-950" />
-        <div>
-          <h4 class="text-[10px] font-bold text-amber-400 leading-tight mb-1">${game.title || game.name}</h4>
-          <p class="text-[8px] text-zinc-400 leading-tight">${game.price || '$0.00'}</p>
+    container.innerHTML = wishlistGames.map(game => {
+      const title = game.title || game.name;
+      return `
+        <div class="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex flex-col justify-between hover:border-amber-400 transition-colors">
+          <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="cursor-pointer">
+            <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
+            <h4 class="text-[10px] font-bold text-amber-400 leading-tight mb-1">${title}</h4>
+            <p class="text-[8px] text-zinc-400 leading-tight mb-3">${game.price || '$0.00'}</p>
+          </div>
+          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1.5 rounded-lg border border-rose-600 transition-colors">
+            Remove
+          </button>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
   } catch (err) {
     console.error('Error opening user wishlist:', err);
