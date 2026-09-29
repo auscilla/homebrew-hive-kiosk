@@ -40,11 +40,18 @@
   border-radius: 4px;
 }
 
-/* --- FORCE 4 IN A ROW GRID --- */
+/* --- FIXED 4-COLUMN GRID LAYOUT --- */
 #game-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 1rem !important;
+  align-items: start !important;
+}
+
+/* Prevents cards from stretching across empty grid spaces when items are filtered */
+#game-grid > div {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* --- FORCE SQUARE GAME CONTAINERS & IMAGES --- */
@@ -65,9 +72,10 @@
 
 /* Image styling inside the square wrapper */
 #game-grid img,
-.game-card img {
+.game-card img,
+.aspect-square {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   aspect-ratio: 1 / 1 !important;
   object-fit: cover !important;
 }
