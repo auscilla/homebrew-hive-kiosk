@@ -40,9 +40,16 @@
   border-radius: 4px;
 }
 
+/* --- FORCE 4 IN A ROW GRID --- */
+#game-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
 /* --- FORCE SQUARE GAME CONTAINERS & IMAGES --- */
 
-/* Targets the div holding the image inside every game card */
+/* Targets the image container inside every card */
 #game-grid > div > div:first-child,
 .game-card > div:first-child,
 [class*="aspect-video"],
@@ -56,7 +63,7 @@
   width: 100% !important;
 }
 
-/* Forces the image inside to fill the square wrapper */
+/* Image styling inside the square wrapper */
 #game-grid img,
 .game-card img {
   width: 100% !important;
