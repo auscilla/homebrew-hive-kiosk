@@ -464,7 +464,10 @@ async function handleWishlistSubmission() {
 async function prepareAndPrintGame(game) {
   if (!game?.rom_url) {
     console.error('No ROM URL found for this game in Supabase.');
-    navigateTo('screen-error');
+    handleHardwareError({
+      error_type: 'NO_ROM',
+      message: 'No ROM URL available for this game.'
+    });
     return;
   }
 
@@ -495,13 +498,37 @@ async function prepareAndPrintGame(game) {
 
     } else {
       console.error('Flashing failed:', result.message || result.error);
-      navigateTo('screen-error');
+      handleHardwareError(result);
     }
 
   } catch (err) {
     console.error('Network or hardware error during flash:', err);
-    navigateTo('screen-error');
+    handleHardwareError({
+      error_type: 'NO_BRIDGE',
+      message: 'Cannot connect to the hardware bridge service.'
+    });
   }
+}
+
+function handleHardwareError(errorData) {
+  const errorTitleEl = document.querySelector('#screen-error h1');
+  const errorMsgEl = document.querySelector('#screen-error p');
+
+  if (errorData.error_type === 'NO_HARDWARE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'HARDWARE UNPLUGGED';
+    if (errorMsgEl) errorMsgEl.innerText = 'The game flasher is not connected to the system. Please ensure the USB cable is plugged in.';
+  } else if (errorData.error_type === 'NO_CARTRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'NO CARTRIDGE DETECTED';
+    if (errorMsgEl) errorMsgEl.innerText = 'Please insert a blank cartridge firmly into the slot before printing.';
+  } else if (errorData.error_type === 'NO_BRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'BRIDGE SERVICE DOWN';
+    if (errorMsgEl) errorMsgEl.innerText = 'Cannot connect to the local bridge background service on the Pi.';
+  } else {
+    if (errorTitleEl) errorTitleEl.innerText = 'ERROR: PRINTING FAILED';
+    if (errorMsgEl) errorMsgEl.innerText = errorData.message || 'Something went wrong while flashing. Please notify a team member.';
+  }
+
+  navigateTo('screen-error');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -566,7 +593,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selectedGameForWishlist) {
       await prepareAndPrintGame(selectedGameForWishlist);
     } else {
-      navigateTo('screen-error');
+      handleHardwareError({
+        error_type: 'NO_GAME_SELECTED',
+        message: 'No game selected.'
+      });
     }
 
     logoutUser();
