@@ -334,13 +334,13 @@ async function openUserWishlistView() {
     container.innerHTML = wishlistGames.map(game => {
       const title = game.title || game.name;
       return `
-        <div class="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex flex-col justify-between hover:border-amber-400 transition-colors">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 flex flex-col h-fit hover:border-amber-400 transition-colors">
           <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="cursor-pointer">
-            <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
-            <h4 class="text-[10px] font-bold text-amber-400 leading-tight mb-1">${title}</h4>
-            <p class="text-[8px] text-zinc-400 leading-tight mb-3">${game.price || '$0.00'}</p>
+            <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-1.5 bg-zinc-950" />
+            <h4 class="text-[10px] font-bold text-amber-400 leading-tight truncate">${title}</h4>
+            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${game.price || '$0.00'}</p>
           </div>
-          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1.5 rounded-lg border border-rose-600 transition-colors">
+          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1 rounded-lg border border-rose-600 transition-colors">
             Remove
           </button>
         </div>
