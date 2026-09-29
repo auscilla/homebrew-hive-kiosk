@@ -40,10 +40,27 @@
   border-radius: 4px;
 }
 
-/* Square Game Covers Override */
+/* --- FORCE SQUARE GAME CONTAINERS & IMAGES --- */
+
+/* Targets the div holding the image inside every game card */
+#game-grid > div > div:first-child,
+.game-card > div:first-child,
+[class*="aspect-video"],
+[class*="h-28"],
+[class*="h-32"],
+[class*="h-36"],
+[class*="h-40"] {
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+}
+
+/* Forces the image inside to fill the square wrapper */
 #game-grid img,
-.game-card img,
-.aspect-video {
+.game-card img {
+  width: 100% !important;
+  height: 100% !important;
   aspect-ratio: 1 / 1 !important;
   object-fit: cover !important;
 }
