@@ -121,7 +121,72 @@ function openCheckout(gameId) {
     `).join('');
   }
 
+  // Update modal wishlist button appearance according to current status
+  updateWishlistButtonUI();
+
   navigateTo('modal-checkout');
+}
+
+/* ==================== WISHLIST BUTTON UI TOGGLE ==================== */
+
+function isGameInUserWishlist(gameTitle) {
+  if (!currentUser || !currentUser.wishlist) return false;
+  const list = currentUser.wishlist.split(', ').filter(Boolean);
+  return list.includes(gameTitle);
+}
+
+function updateWishlistButtonUI() {
+  const wishlistBtn = document.getElementById('btn-wishlist');
+  if (!wishlistBtn || !selectedGameForWishlist) return;
+
+  const title = selectedGameForWishlist.title || selectedGameForWishlist.name;
+  const inWishlist = isGameInUserWishlist(title);
+
+  if (inWishlist) {
+    // Grey state when saved to wishlist
+    wishlistBtn.className = 'bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs transition-colors';
+    wishlistBtn.innerText = 'Wishlist';
+  } else {
+    // Gold/Amber state when NOT in wishlist
+    wishlistBtn.className = 'bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs transition-colors';
+    wishlistBtn.innerText = 'Wishlist';
+  }
+}
+
+async function toggleGameWishlistStatus() {
+  if (!selectedGameForWishlist) return;
+
+  // If user is not logged in, prompt authentication modal
+  if (!currentUser) {
+    openWishlistAuthModal(selectedGameForWishlist);
+    return;
+  }
+
+  const title = selectedGameForWishlist.title || selectedGameForWishlist.name;
+  let wishlistArray = currentUser.wishlist ? currentUser.wishlist.split(', ').filter(Boolean) : [];
+
+  if (wishlistArray.includes(title)) {
+    // Remove from wishlist
+    wishlistArray = wishlistArray.filter(t => t !== title);
+  } else {
+    // Add to wishlist
+    wishlistArray.push(title);
+  }
+
+  const updatedWishlist = wishlistArray.join(', ');
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ wishlist: updatedWishlist })
+    .eq('id', currentUser.id);
+
+  if (!error) {
+    currentUser.wishlist = updatedWishlist;
+    updateWishlistButtonUI();
+  } else {
+    console.error('Failed to update wishlist:', error);
+    alert('Failed to update wishlist. Please try again.');
+  }
 }
 
 /* ==================== LIGHTBOX LOGIC ==================== */
@@ -171,11 +236,12 @@ function setCurrentUser(user) {
     loginText.innerText = user.email.split('@')[0];
   }
 
-  // Show Wishlist Button Next to User Name
   const wishlistBtn = document.getElementById('btn-user-wishlist');
   if (wishlistBtn) {
     wishlistBtn.classList.remove('hidden');
   }
+
+  updateWishlistButtonUI();
 }
 
 function logoutUser() {
@@ -187,13 +253,13 @@ function logoutUser() {
     loginText.innerText = 'Login';
   }
 
-  // Hide Wishlist Button
   const wishlistBtn = document.getElementById('btn-user-wishlist');
   if (wishlistBtn) {
     wishlistBtn.classList.add('hidden');
   }
 
   closeUserWishlistView();
+  updateWishlistButtonUI();
 }
 
 async function checkSavedUserSession() {
@@ -216,29 +282,6 @@ async function checkSavedUserSession() {
   }
 }
 
-async function saveGameToUserWishlist(user, gameTitle) {
-  let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
-
-  if (!wishlistArray.includes(gameTitle)) {
-    wishlistArray.push(gameTitle);
-  }
-
-  const updatedWishlist = wishlistArray.join(', ');
-
-  const { error: updateError } = await supabaseClient
-    .from('users')
-    .update({ wishlist: updatedWishlist })
-    .eq('id', user.id);
-
-  if (!updateError) {
-    user.wishlist = updatedWishlist;
-    closeWishlistAuthModal();
-    alert(`"${gameTitle}" saved to your wishlist!`);
-  } else {
-    alert('Failed to save to wishlist. Please try again.');
-  }
-}
-
 /* ==================== WISHLIST VIEW MODAL ==================== */
 
 async function openUserWishlistView() {
@@ -251,7 +294,6 @@ async function openUserWishlistView() {
   container.innerHTML = '<div class="col-span-3 text-center text-xs text-zinc-400 py-8">Loading wishlist...</div>';
   modal.classList.remove('hidden');
 
-  // Query latest wishlist string from Supabase
   try {
     const { data: user, error } = await supabaseClient
       .from('users')
@@ -271,7 +313,6 @@ async function openUserWishlistView() {
       return;
     }
 
-    // Match saved titles to loaded GAMES_DATA
     const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
 
     container.innerHTML = wishlistGames.map(game => `
@@ -295,15 +336,10 @@ function closeUserWishlistView() {
   if (modal) modal.classList.add('hidden');
 }
 
-/* ==================== WISHLIST MODAL LOGIC ==================== */
+/* ==================== WISHLIST AUTH MODAL LOGIC ==================== */
 
 function openWishlistAuthModal(game = null) {
   if (game) selectedGameForWishlist = game;
-
-  if (currentUser && selectedGameForWishlist) {
-    saveGameToUserWishlist(currentUser, selectedGameForWishlist.title || selectedGameForWishlist.name);
-    return;
-  }
 
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
@@ -384,27 +420,10 @@ async function handleWishlistSubmission() {
     setCurrentUser(user);
 
     if (selectedGameForWishlist) {
-      let wishlistArray = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
-      const targetTitle = selectedGameForWishlist.title || selectedGameForWishlist.name;
-      
-      if (!wishlistArray.includes(targetTitle)) {
-        wishlistArray.push(targetTitle);
-      }
-
-      const updatedWishlist = wishlistArray.join(', ');
-
-      const { error: updateError } = await supabaseClient
-        .from('users')
-        .update({ wishlist: updatedWishlist })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
+      await toggleGameWishlistStatus();
       closeWishlistAuthModal();
-      alert(`"${targetTitle}" saved to wishlist!`);
     } else {
       closeWishlistAuthModal();
-      alert(`Logged in as ${user.email}!`);
     }
 
   } catch (err) {
@@ -434,7 +453,6 @@ async function prepareAndPrintGame(game) {
     console.log(`Sending flash request for ${game.title || game.name}...`);
     if (progressBar) progressBar.style.width = '40%';
 
-    // Call local Python bridge running on port 5000
     const response = await fetch('http://127.0.0.1:5000/flash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -449,7 +467,6 @@ async function prepareAndPrintGame(game) {
       if (progressBar) progressBar.style.width = '100%';
       console.log('Flash Output:', result.output);
       
-      // Wait 1.5 seconds so the user sees 100% complete before returning home
       setTimeout(() => {
         navigateTo('screen-landing');
       }, 1500);
@@ -486,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
   document.getElementById('btn-close-wishlist-view')?.addEventListener('click', closeUserWishlistView);
 
-  document.getElementById('btn-wishlist')?.addEventListener('click', () => openWishlistAuthModal());
+  document.getElementById('btn-wishlist')?.addEventListener('click', toggleGameWishlistStatus);
   document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
   document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
 
@@ -514,10 +531,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
     }
 
-    // Show progress screen immediately
     navigateTo('screen-progress');
 
-    // Trigger hardware flash via Python bridge
     if (selectedGameForWishlist) {
       await prepareAndPrintGame(selectedGameForWishlist);
     } else {
