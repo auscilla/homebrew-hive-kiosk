@@ -41,13 +41,11 @@
   <!-- ==================== SCREEN 2: BROWSE GRID ==================== -->
   <div id="screen-browse" class="screen hidden flex-col h-full bg-zinc-900 p-6">
     <div class="flex items-center justify-between mb-4 bg-zinc-800/90 p-3 rounded-xl border border-zinc-700">
-      <!-- Top Left: Login & Wishlist Button Group -->
       <div class="flex items-center gap-2">
         <button id="btn-login" class="bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600 font-bold">
           <span id="login-text">Login</span>
         </button>
 
-        <!-- Wishlist Button (Hidden until logged in or active session) -->
         <button id="btn-user-wishlist" class="hidden bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-lg text-xs font-bold transition-colors">
           WISHLIST
         </button>
@@ -91,7 +89,7 @@
       </div>
 
       <div id="wishlist-items-container" class="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1">
-        <!-- Wishlist items dynamically populated by app.js -->
+        <!-- Dynamically populated by app.js -->
       </div>
     </div>
   </div>
@@ -104,7 +102,6 @@
       </div>
 
       <div class="grid grid-cols-2 gap-6 p-6">
-        <!-- Left: Summary & Action -->
         <div class="flex flex-col gap-3">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Game Details</h3>
           <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex gap-3 items-center">
@@ -123,7 +120,6 @@
           </div>
         </div>
 
-        <!-- Right: Previews -->
         <div class="flex flex-col gap-3">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
           <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-zinc-700">
@@ -142,12 +138,10 @@
 
   <!-- SCREENSHOT LIGHTBOX MODAL -->
   <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[70] p-6 backdrop-blur-md">
-    <!-- Close Button Top-Left -->
     <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">
       ✕
     </button>
 
-    <!-- Main Lightbox Image with Left & Right Nav Arrows -->
     <div class="relative flex items-center justify-center max-w-3xl w-full">
       <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
         ‹
@@ -186,7 +180,6 @@
     <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
 
     <div class="relative mb-12 flex flex-col items-center justify-center">
-      <!-- Dotted flight path vector closely wrapping the printing stack -->
       <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[260px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
@@ -210,12 +203,36 @@
     <div class="mt-4 text-xs tracking-widest text-zinc-400 z-10">Loading...</div>
   </div>
 
-  <!-- ==================== SCREEN 5: ERROR ==================== -->
+  <!-- ==================== SUCCESS SCREEN ==================== -->
+  <div id="screen-success" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
+    <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 mb-6 tracking-wide">
+      SUCCESS!
+    </h1>
+    <img src="assets/brand/bee-flying.png" alt="Happy Bee" class="w-20 h-20 mb-6 animate-bounce" />
+    <p class="text-zinc-200 text-sm max-w-lg mb-8 leading-relaxed">
+      Please remove your cartridge from the slot.
+    </p>
+
+    <div class="flex flex-col gap-3 w-full max-w-xs">
+      <button id="btn-success-label" class="bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
+        Get Your Label!
+      </button>
+      <button id="btn-success-home" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl font-bold text-xs border border-zinc-600">
+        Home
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN 5: FIXED ERROR/FAIL SCREEN ==================== -->
   <div id="screen-error" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-2xl font-bold text-rose-500 mb-8">ERROR: PRINTING FAILED</h1>
-    <img src="assets/brand/bee-sad.png" alt="Sad Bee" class="w-28 h-28 mb-8 animate-bounce" />
-    <p class="text-zinc-400 text-xs max-w-md mb-8">Something went wrong while flashing the cartridge. Please notify a team member.</p>
-    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 px-6 py-3 rounded-xl text-xs border border-zinc-600">
+    <h1 class="text-xl md:text-2xl font-bold text-rose-500 mb-6 tracking-wide">
+      ERROR: PRINTING FAILED
+    </h1>
+    <img src="assets/brand/bee-sad.png" alt="Sad Bee" class="w-20 h-20 mb-6 object-contain animate-bounce" />
+    <p class="text-zinc-300 text-xs max-w-md mb-8 leading-relaxed">
+      Something went wrong while flashing the cartridge. Please notify a team member for assistance.
+    </p>
+    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl text-xs border border-zinc-600 font-bold">
       Return to Home
     </button>
   </div>
