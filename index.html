@@ -121,20 +121,22 @@
           </div>
         </div>
 
-        <!-- ADDED self-start HERE to stop the column from stretching vertically -->
-        <div class="flex flex-col gap-3 h-fit self-start">
+        <div class="flex flex-col gap-3 h-fit self-start w-full">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
-          <div class="relative bg-black rounded-xl overflow-hidden aspect-video w-full border border-zinc-700">
+          
+          <!-- STRICT 16:9 BULLETPROOF CONTAINER -->
+          <div class="relative w-full pt-[56.25%] bg-black rounded-xl overflow-hidden border border-zinc-700 block">
+            
             <!-- Local MP4 Player -->
-            <video id="preview-video" autoplay loop muted class="absolute inset-0 w-full h-full object-cover">
+            <video id="preview-video" autoplay loop muted class="absolute top-0 left-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
 
             <!-- YouTube Embed Player -->
-            <iframe id="preview-iframe" class="absolute inset-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
             <!-- Play Icon Overlay -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
               <img id="preview-play-icon" src="assets/brand/icon-play.png" class="w-12 h-12 opacity-80" alt="" />
               <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
             </div>
@@ -300,6 +302,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
