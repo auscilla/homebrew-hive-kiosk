@@ -35,7 +35,8 @@ function getYouTubeEmbedUrl(url) {
   }
 
   if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1`;
+    // Autoplay disabled, controls enabled, unmuted
+    return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1`;
   }
   return null;
 }
@@ -185,7 +186,8 @@ function openCheckout(gameId) {
       videoSrc.src = videoUrl;
       video.classList.remove('hidden');
       video.load();
-      video.play().catch(e => console.log('Autoplay check:', e));
+      // Changed local video behavior: remove automatic .play() so user controls it
+      // video.play().catch(e => console.log('Autoplay check:', e));
     }
     if (playIcon) playIcon.classList.remove('hidden');
 
