@@ -121,22 +121,25 @@
           </div>
         </div>
 
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3 h-fit">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
-          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-zinc-700">
+          <div class="relative bg-black rounded-xl overflow-hidden aspect-video w-full border border-zinc-700">
             <!-- Local MP4 Player -->
-            <video id="preview-video" autoplay loop muted class="w-full h-full object-cover">
+            <video id="preview-video" autoplay loop muted class="absolute inset-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
 
             <!-- YouTube Embed Player -->
-            <iframe id="preview-iframe" class="w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe id="preview-iframe" class="absolute inset-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-            <img id="preview-play-icon" src="assets/brand/icon-play.png" class="absolute w-12 h-12 pointer-events-none opacity-80" alt="" />
-            <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded z-10 pointer-events-none">PREVIEW VIDEO</span>
+            <!-- Play Icon Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <img id="preview-play-icon" src="assets/brand/icon-play.png" class="w-12 h-12 opacity-80" alt="" />
+              <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
+            </div>
           </div>
 
-          <div id="screen-grabs-container" class="grid grid-cols-3 gap-2"></div>
+          <div id="screen-grabs-container" class="grid grid-cols-3 gap-2 mt-1"></div>
         </div>
       </div>
     </div>
@@ -296,6 +299,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
