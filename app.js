@@ -35,7 +35,6 @@ function getYouTubeEmbedUrl(url) {
   }
 
   if (videoId) {
-    // Autoplay disabled, controls enabled, unmuted
     return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1`;
   }
   return null;
@@ -186,8 +185,6 @@ function openCheckout(gameId) {
       videoSrc.src = videoUrl;
       video.classList.remove('hidden');
       video.load();
-      // Changed local video behavior: remove automatic .play() so user controls it
-      // video.play().catch(e => console.log('Autoplay check:', e));
     }
     if (playIcon) playIcon.classList.remove('hidden');
 
@@ -202,7 +199,7 @@ function openCheckout(gameId) {
   const container = document.getElementById('screen-grabs-container');
   if (container) {
     container.innerHTML = currentLightboxImages.map((src, index) => `
-      <img src="${src}" onclick="openLightbox(${index})" class="bg-zinc-900 rounded-lg h-14 w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
+      <img src="${src}" onclick="openLightbox(${index})" class="bg-zinc-900 rounded-lg aspect-square w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
     `).join('');
   }
 
@@ -451,7 +448,7 @@ function openWishlistAuthModal(game = null) {
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
   
-  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-email-input').value = value = '';
   document.getElementById('wishlist-pin-input').value = '';
 
   const saveBtn = document.getElementById('btn-save-wishlist');
