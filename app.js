@@ -3,7 +3,8 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
-let currentUser = null;
+let currentUser = null; // Gamer session
+let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
 
@@ -139,10 +140,8 @@ function applyFilters() {
 
   const filtered = GAMES_DATA.filter(game => {
     const gameTitle = (game.title || game.name || '').toLowerCase();
-
     const matchesCategory = currentCategory === 'all' || 
       (game.category && game.category.toLowerCase() === currentCategory.toLowerCase());
-
     const matchesSearch = !query || gameTitle.includes(query);
 
     return matchesCategory && matchesSearch;
@@ -175,7 +174,6 @@ function openCheckout(gameId) {
       iframe.classList.remove('hidden');
     }
     if (playIcon) playIcon.classList.add('hidden');
-
   } else if (videoUrl) {
     if (iframe) {
       iframe.src = '';
@@ -187,7 +185,6 @@ function openCheckout(gameId) {
       video.load();
     }
     if (playIcon) playIcon.classList.remove('hidden');
-
   } else {
     if (iframe) { iframe.src = ''; iframe.classList.add('hidden'); }
     if (video) video.classList.add('hidden');
@@ -195,7 +192,6 @@ function openCheckout(gameId) {
   }
 
   currentLightboxImages = selectedGame.screenshots || [];
-
   const container = document.getElementById('screen-grabs-container');
   if (container) {
     container.innerHTML = currentLightboxImages.map((src, index) => `
@@ -220,9 +216,7 @@ function updateWishlistButtonUI() {
   if (!wishlistBtn || !selectedGameForWishlist) return;
 
   const title = selectedGameForWishlist.title || selectedGameForWishlist.name;
-  const inWishlist = isGameInUserWishlist(title);
-
-  if (inWishlist) {
+  if (isGameInUserWishlist(title)) {
     wishlistBtn.className = 'bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs transition-colors';
     wishlistBtn.innerText = 'Wishlist';
   } else {
@@ -233,7 +227,6 @@ function updateWishlistButtonUI() {
 
 async function toggleGameWishlistStatus() {
   if (!selectedGameForWishlist) return;
-
   if (!currentUser) {
     openWishlistAuthModal(selectedGameForWishlist);
     return;
@@ -249,7 +242,6 @@ async function toggleGameWishlistStatus() {
   }
 
   const updatedWishlist = wishlistArray.join(', ');
-
   const { error } = await supabaseClient
     .from('users')
     .update({ wishlist: updatedWishlist })
@@ -269,23 +261,15 @@ async function toggleGameWishlistStatus() {
 function openLightbox(index) {
   if (!currentLightboxImages.length) return;
   currentLightboxIndex = index;
-
   const lightboxImg = document.getElementById('lightbox-img');
-  if (lightboxImg) {
-    lightboxImg.src = currentLightboxImages[currentLightboxIndex];
-  }
-
+  if (lightboxImg) lightboxImg.src = currentLightboxImages[currentLightboxIndex];
   const lightbox = document.getElementById('modal-lightbox');
-  if (lightbox) {
-    lightbox.classList.remove('hidden');
-  }
+  if (lightbox) lightbox.classList.remove('hidden');
 }
 
 function closeLightbox() {
   const lightbox = document.getElementById('modal-lightbox');
-  if (lightbox) {
-    lightbox.classList.add('hidden');
-  }
+  if (lightbox) lightbox.classList.add('hidden');
 }
 
 function lightboxNext() {
@@ -300,21 +284,82 @@ function lightboxPrev() {
   document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
 }
 
-/* ==================== SESSION & LOGIN LOGIC ==================== */
+/* ==================== SESSION LOGIC (STORE & GAMER) ==================== */
+
+async function handleStoreLogin() {
+  const emailInput = document.getElementById('store-login-email').value.trim().toLowerCase();
+  const pinInput = document.getElementById('store-login-pin').value.trim();
+  const errorMsg = document.getElementById('store-login-error');
+  const loginBtn = document.getElementById('btn-store-login');
+
+  if (!emailInput || !pinInput) {
+    if (errorMsg) errorMsg.classList.remove('hidden');
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.innerText = 'AUTHENTICATING...';
+
+  try {
+    const { data: store, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('email', emailInput)
+      .eq('pin', pinInput)
+      .eq('account_type', 'store')
+      .single();
+
+    if (error || !store) {
+      if (errorMsg) errorMsg.classList.remove('hidden');
+      loginBtn.disabled = false;
+      loginBtn.innerText = 'ACTIVATE KIOSK';
+      return;
+    }
+
+    currentStoreEmail = store.email;
+    localStorage.setItem('kiosk_store_email', store.email);
+    
+    // Hide setup, proceed to standard kiosk landing page
+    document.getElementById('screen-store-login').classList.add('hidden');
+    document.getElementById('screen-store-login').classList.remove('active');
+    navigateTo('screen-landing');
+
+  } catch (err) {
+    console.error('Store login error:', err);
+    if (errorMsg) errorMsg.classList.remove('hidden');
+    loginBtn.disabled = false;
+    loginBtn.innerText = 'ACTIVATE KIOSK';
+  }
+}
+
+function checkStoreSession() {
+  if (currentStoreEmail) {
+    document.getElementById('screen-store-login').classList.add('hidden');
+    document.getElementById('screen-store-login').classList.remove('active');
+    navigateTo('screen-landing');
+  } else {
+    // Force to login screen if not authenticated
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.add('hidden');
+      s.classList.remove('active');
+    });
+    const storeLogin = document.getElementById('screen-store-login');
+    if (storeLogin) {
+      storeLogin.classList.remove('hidden');
+      storeLogin.classList.add('active');
+    }
+  }
+}
 
 function setCurrentUser(user) {
   currentUser = user;
   localStorage.setItem('kiosk_user_email', user.email);
 
   const loginText = document.getElementById('login-text');
-  if (loginText) {
-    loginText.innerText = user.email.split('@')[0];
-  }
+  if (loginText) loginText.innerText = user.email.split('@')[0];
 
   const wishlistBtn = document.getElementById('btn-user-wishlist');
-  if (wishlistBtn) {
-    wishlistBtn.classList.remove('hidden');
-  }
+  if (wishlistBtn) wishlistBtn.classList.remove('hidden');
 
   updateWishlistButtonUI();
 }
@@ -324,14 +369,10 @@ function logoutUser() {
   localStorage.removeItem('kiosk_user_email');
 
   const loginText = document.getElementById('login-text');
-  if (loginText) {
-    loginText.innerText = 'Login';
-  }
+  if (loginText) loginText.innerText = 'Login';
 
   const wishlistBtn = document.getElementById('btn-user-wishlist');
-  if (wishlistBtn) {
-    wishlistBtn.classList.add('hidden');
-  }
+  if (wishlistBtn) wishlistBtn.classList.add('hidden');
 
   closeUserWishlistView();
   updateWishlistButtonUI();
@@ -340,7 +381,6 @@ function logoutUser() {
 async function checkSavedUserSession() {
   const savedEmail = localStorage.getItem('kiosk_user_email');
   if (!savedEmail) return;
-
   try {
     const { data: user } = await supabaseClient
       .from('users')
@@ -349,15 +389,13 @@ async function checkSavedUserSession() {
       .eq('account_type', 'gamer')
       .single();
 
-    if (user) {
-      setCurrentUser(user);
-    }
+    if (user) setCurrentUser(user);
   } catch (err) {
     console.error('Session restore failed:', err);
   }
 }
 
-/* ==================== WISHLIST VIEW MODAL ==================== */
+/* ==================== WISHLIST VIEW & AUTH MODALS ==================== */
 
 async function removeFromWishlist(gameTitle) {
   if (!currentUser) return;
@@ -383,7 +421,6 @@ async function removeFromWishlist(gameTitle) {
 
 async function openUserWishlistView() {
   if (!currentUser) return;
-
   const modal = document.getElementById('modal-wishlist-view');
   const container = document.getElementById('wishlist-items-container');
   if (!modal || !container) return;
@@ -412,7 +449,6 @@ async function openUserWishlistView() {
     }
 
     const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
-
     container.innerHTML = wishlistGames.map(game => {
       const title = game.title || game.name;
       return `
@@ -440,15 +476,13 @@ function closeUserWishlistView() {
   if (modal) modal.classList.add('hidden');
 }
 
-/* ==================== WISHLIST AUTH MODAL LOGIC ==================== */
-
 function openWishlistAuthModal(game = null) {
   if (game) selectedGameForWishlist = game;
 
   const titleSpan = document.getElementById('wishlist-game-title');
   if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
   
-  document.getElementById('wishlist-email-input').value = value = '';
+  document.getElementById('wishlist-email-input').value = '';
   document.getElementById('wishlist-pin-input').value = '';
 
   const saveBtn = document.getElementById('btn-save-wishlist');
@@ -541,11 +575,29 @@ async function handleWishlistSubmission() {
   }
 }
 
-/* ==================== ROM PRINTING & FLASHING LOGIC ==================== */
+/* ==================== ROM PRINTING & INVOICE LOGGING ==================== */
+
+async function logPrintToInvoice(game) {
+  if (!currentStoreEmail) return;
+  const gameTitle = game.title || game.name || 'Unknown Game';
+
+  try {
+    const { error } = await supabaseClient
+      .from('print_logs')
+      .insert([{ 
+        store_email: currentStoreEmail, 
+        game_title: gameTitle 
+      }]);
+      
+    if (error) console.error('Failed to write invoice log:', error);
+    else console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+  } catch (err) {
+    console.error('Error logging print to Supabase:', err);
+  }
+}
 
 async function prepareAndPrintGame(game) {
   if (!game?.rom_url) {
-    console.error('No ROM URL found for this game in Supabase.');
     handleHardwareError({
       error_type: 'NO_ROM',
       message: 'No ROM URL available for this game.'
@@ -567,12 +619,14 @@ async function prepareAndPrintGame(game) {
     });
 
     if (progressBar) progressBar.style.width = '80%';
-
     const result = await response.json();
 
     if (response.ok && result.status === 'success') {
       if (progressBar) progressBar.style.width = '100%';
       console.log('Flash Output:', result.output);
+      
+      // Flash was successful: Bill the store
+      await logPrintToInvoice(game);
       
       setTimeout(() => {
         navigateTo('screen-success');
@@ -613,9 +667,15 @@ function handleHardwareError(errorData) {
   navigateTo('screen-error');
 }
 
+/* ==================== INITIALIZATION ==================== */
+
 document.addEventListener('DOMContentLoaded', () => {
+  checkStoreSession(); // Boot to setup screen if not authenticated
   loadGamesFromSupabase();
   checkSavedUserSession();
+
+  // Store Authentication Listener
+  document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
 
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
 
@@ -673,6 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-progress');
 
     if (selectedGameForWishlist) {
+      // Flashes the hardware, then silently logs the invoice to Supabase on success
       await prepareAndPrintGame(selectedGameForWishlist);
     } else {
       handleHardwareError({
