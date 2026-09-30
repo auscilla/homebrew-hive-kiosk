@@ -1,301 +1,691 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Homebrew Hive Kiosk</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
+const SUPABASE_URL = 'https://tskbfytfjsiavwysecuk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  <!-- ==================== SCREEN 1: LANDING ==================== -->
-  <div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
-    <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
-      Print Your Own Video Game!
-    </h1>
+let GAMES_DATA = [];
+let currentUser = null;
+let selectedGameForWishlist = null;
+let currentCategory = 'all';
 
-    <div class="relative flex flex-col items-center my-auto">
-      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[220px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
-        <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
-              stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
-      </svg>
+// Lightbox variables
+let currentLightboxImages = [];
+let currentLightboxIndex = 0;
 
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
+/* ==================== HELPER: URL & VIDEO FORMATTERS ==================== */
 
-      <div class="relative w-64 h-72 flex items-center justify-center z-10">
-        <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
+function formatImageUrl(url) {
+  if (!url) return '';
+  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+  }
+  return url;
+}
+
+function getYouTubeEmbedUrl(url) {
+  if (!url) return null;
+  let videoId = null;
+
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0];
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0];
+  } else if (url.includes('youtube.com/embed/')) {
+    videoId = url.split('embed/')[1]?.split('?')[0];
+  }
+
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1`;
+  }
+  return null;
+}
+
+/* ==================== SUPABASE DATA LOADING ==================== */
+
+async function loadGamesFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from('games')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching games from Supabase:', error);
+    return;
+  }
+
+  GAMES_DATA = data.map(game => {
+    const rawImageUrl = game.image_url || game.cover_url || game.cartridge_image_url || '';
+    const imageUrl = formatImageUrl(rawImageUrl);
+
+    let gallery = [];
+    if (game.screenshots) {
+      if (Array.isArray(game.screenshots)) {
+        gallery = game.screenshots.map(formatImageUrl);
+      } else if (typeof game.screenshots === 'string') {
+        try {
+          const parsed = JSON.parse(game.screenshots);
+          gallery = (Array.isArray(parsed) ? parsed : [game.screenshots]).map(formatImageUrl);
+        } catch (e) {
+          gallery = game.screenshots.split(',').map(s => s.trim()).filter(Boolean).map(formatImageUrl);
+        }
+      }
+    }
+
+    if (gallery.length === 0) {
+      gallery = [
+        'assets/brand/snap.png',
+        'assets/brand/snap.png',
+        'assets/brand/snap.png'
+      ];
+    }
+
+    return {
+      ...game,
+      image_url: imageUrl,
+      rom_url: game.rom_url || '',
+      screenshots: gallery
+    };
+  });
+
+  renderGames(GAMES_DATA);
+}
+
+function navigateTo(screenId) {
+  if (screenId === 'screen-landing') {
+    logoutUser();
+  }
+
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.add('hidden');
+    s.classList.remove('active');
+  });
+  const target = document.getElementById(screenId);
+  if (target) {
+    target.classList.remove('hidden');
+    target.classList.add('active');
+  }
+}
+
+function renderGames(gamesList) {
+  const grid = document.getElementById('game-grid');
+  if (!grid) return;
+
+  grid.innerHTML = gamesList.map(game => `
+    <div onclick="openCheckout('${game.id}')" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
+      <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
+      <div>
+        <h4 class="text-[11px] font-bold text-amber-400 mb-1 leading-tight">${game.title || game.name}</h4>
+        <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${game.description}</p>
       </div>
     </div>
+  `).join('');
+}
 
-    <div class="mb-6">
-      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-3">
-        With Homebrew Hive
-      </h2>
-      <p class="text-amber-400 text-xs animate-pulse">Tap Screen to Begin</p>
-    </div>
-  </div>
+function filterCategory(categoryName) {
+  currentCategory = categoryName;
 
-  <!-- ==================== SCREEN 2: BROWSE GRID ==================== -->
-  <div id="screen-browse" class="screen hidden flex-col h-full bg-zinc-900 p-6">
-    <div class="flex items-center justify-between mb-4 bg-zinc-800/90 p-3 rounded-xl border border-zinc-700">
-      <div class="flex items-center gap-2">
-        <button id="btn-login" class="bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600 font-bold">
-          <span id="login-text">Login</span>
-        </button>
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    if (btn.innerText.toLowerCase() === categoryName.toLowerCase() || (categoryName === 'all' && btn.innerText === 'All Games')) {
+      btn.className = 'category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs';
+    } else {
+      btn.className = 'category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700';
+    }
+  });
 
-        <button id="btn-user-wishlist" class="hidden bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-lg text-xs font-bold transition-colors">
-          WISHLIST
-        </button>
-      </div>
+  applyFilters();
+}
 
-      <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="SEARCH GAMES..." 
-          autocomplete="off"
-          class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider"
-        />
-      </div>
+function applyFilters() {
+  const query = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
 
-      <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
-        <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
-        <span>HOME</span>
-      </button>
-    </div>
+  const filtered = GAMES_DATA.filter(game => {
+    const gameTitle = (game.title || game.name || '').toLowerCase();
 
-    <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
-      <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs">All Games</button>
-      <button onclick="filterCategory('New')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">New</button>
-      <button onclick="filterCategory('Classic')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Classic</button>
-      <button onclick="filterCategory('Adventure')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Adventure</button>
-      <button onclick="filterCategory('Action')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Action</button>
-      <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
-    </div>
+    const matchesCategory = currentCategory === 'all' || 
+      (game.category && game.category.toLowerCase() === currentCategory.toLowerCase());
 
-    <div id="game-grid" class="grid grid-cols-4 gap-4 overflow-y-auto flex-1 pr-2"></div>
-  </div>
+    const matchesSearch = !query || gameTitle.includes(query);
 
-  <!-- ==================== WISHLIST MANAGEMENT DRAWER/MODAL ==================== -->
-  <div id="modal-wishlist-view" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-6 backdrop-blur-md z-[65]">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-      <div class="bg-zinc-700 py-3 px-6 flex justify-between items-center border-b border-zinc-600">
-        <h2 class="text-sm font-bold tracking-wide text-amber-400">My Wishlist</h2>
-        <button id="btn-close-wishlist-view" class="bg-rose-800 hover:bg-rose-700 text-white font-bold px-3 py-1 rounded text-xs">
-          ✕
-        </button>
-      </div>
+    return matchesCategory && matchesSearch;
+  });
 
-      <div id="wishlist-items-container" class="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1">
-        <!-- Dynamically populated by app.js -->
-      </div>
-    </div>
-  </div>
+  renderGames(filtered);
+}
 
-  <!-- ==================== SCREEN 3: CHECKOUT MODAL ==================== -->
-  <div id="modal-checkout" class="screen hidden fixed inset-0 bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm z-50">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col">
-      <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
-        <h2 class="text-lg font-bold tracking-wide">Checkout / Wishlist</h2>
-      </div>
+function openCheckout(gameId) {
+  const selectedGame = GAMES_DATA.find(g => g.id === gameId);
+  if (!selectedGame) return;
 
-      <div class="grid grid-cols-2 gap-6 p-6">
-        <div class="flex flex-col gap-3">
-          <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Game Details</h3>
-          <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex gap-3 items-center">
-            <img id="detail-img" src="" class="w-20 h-20 object-cover rounded-lg border border-zinc-700" alt="Cover" />
-            <div>
-              <div class="text-[9px] text-zinc-400 uppercase">Cart Summary</div>
-              <div id="detail-title" class="text-xs font-bold text-amber-400 leading-snug">Title</div>
-              <div id="detail-price" class="text-xs text-zinc-300 mt-1">Price: $0.00</div>
-            </div>
+  selectedGameForWishlist = selectedGame;
+  document.getElementById('detail-title').innerText = selectedGame.title || selectedGame.name;
+  document.getElementById('detail-price').innerText = `Price: ${selectedGame.price || '$0.00'}`;
+  document.getElementById('detail-img').src = selectedGame.image_url;
+
+  const video = document.getElementById('preview-video');
+  const videoSrc = document.getElementById('preview-video-src');
+  const iframe = document.getElementById('preview-iframe');
+  const playIcon = document.getElementById('preview-play-icon');
+
+  const videoUrl = selectedGame.video_url || '';
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(videoUrl);
+
+  if (youtubeEmbedUrl) {
+    if (video) video.classList.add('hidden');
+    if (iframe) {
+      iframe.src = youtubeEmbedUrl;
+      iframe.classList.remove('hidden');
+    }
+    if (playIcon) playIcon.classList.add('hidden');
+
+  } else if (videoUrl) {
+    if (iframe) {
+      iframe.src = '';
+      iframe.classList.add('hidden');
+    }
+    if (video && videoSrc) {
+      videoSrc.src = videoUrl;
+      video.classList.remove('hidden');
+      video.load();
+      video.play().catch(e => console.log('Autoplay check:', e));
+    }
+    if (playIcon) playIcon.classList.remove('hidden');
+
+  } else {
+    if (iframe) { iframe.src = ''; iframe.classList.add('hidden'); }
+    if (video) video.classList.add('hidden');
+    if (playIcon) playIcon.classList.remove('hidden');
+  }
+
+  currentLightboxImages = selectedGame.screenshots || [];
+
+  const container = document.getElementById('screen-grabs-container');
+  if (container) {
+    container.innerHTML = currentLightboxImages.map((src, index) => `
+      <img src="${src}" onclick="openLightbox(${index})" class="bg-zinc-900 rounded-lg h-14 w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
+    `).join('');
+  }
+
+  updateWishlistButtonUI();
+  navigateTo('modal-checkout');
+}
+
+/* ==================== WISHLIST BUTTON UI TOGGLE ==================== */
+
+function isGameInUserWishlist(gameTitle) {
+  if (!currentUser || !currentUser.wishlist) return false;
+  const list = currentUser.wishlist.split(', ').filter(Boolean);
+  return list.includes(gameTitle);
+}
+
+function updateWishlistButtonUI() {
+  const wishlistBtn = document.getElementById('btn-wishlist');
+  if (!wishlistBtn || !selectedGameForWishlist) return;
+
+  const title = selectedGameForWishlist.title || selectedGameForWishlist.name;
+  const inWishlist = isGameInUserWishlist(title);
+
+  if (inWishlist) {
+    wishlistBtn.className = 'bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs transition-colors';
+    wishlistBtn.innerText = 'Wishlist';
+  } else {
+    wishlistBtn.className = 'bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs transition-colors';
+    wishlistBtn.innerText = 'Wishlist';
+  }
+}
+
+async function toggleGameWishlistStatus() {
+  if (!selectedGameForWishlist) return;
+
+  if (!currentUser) {
+    openWishlistAuthModal(selectedGameForWishlist);
+    return;
+  }
+
+  const title = selectedGameForWishlist.title || selectedGameForWishlist.name;
+  let wishlistArray = currentUser.wishlist ? currentUser.wishlist.split(', ').filter(Boolean) : [];
+
+  if (wishlistArray.includes(title)) {
+    wishlistArray = wishlistArray.filter(t => t !== title);
+  } else {
+    wishlistArray.push(title);
+  }
+
+  const updatedWishlist = wishlistArray.join(', ');
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ wishlist: updatedWishlist })
+    .eq('id', currentUser.id);
+
+  if (!error) {
+    currentUser.wishlist = updatedWishlist;
+    updateWishlistButtonUI();
+  } else {
+    console.error('Failed to update wishlist:', error);
+    alert('Failed to update wishlist. Please try again.');
+  }
+}
+
+/* ==================== LIGHTBOX LOGIC ==================== */
+
+function openLightbox(index) {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = index;
+
+  const lightboxImg = document.getElementById('lightbox-img');
+  if (lightboxImg) {
+    lightboxImg.src = currentLightboxImages[currentLightboxIndex];
+  }
+
+  const lightbox = document.getElementById('modal-lightbox');
+  if (lightbox) {
+    lightbox.classList.remove('hidden');
+  }
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('modal-lightbox');
+  if (lightbox) {
+    lightbox.classList.add('hidden');
+  }
+}
+
+function lightboxNext() {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
+  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
+}
+
+function lightboxPrev() {
+  if (!currentLightboxImages.length) return;
+  currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length;
+  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
+}
+
+/* ==================== SESSION & LOGIN LOGIC ==================== */
+
+function setCurrentUser(user) {
+  currentUser = user;
+  localStorage.setItem('kiosk_user_email', user.email);
+
+  const loginText = document.getElementById('login-text');
+  if (loginText) {
+    loginText.innerText = user.email.split('@')[0];
+  }
+
+  const wishlistBtn = document.getElementById('btn-user-wishlist');
+  if (wishlistBtn) {
+    wishlistBtn.classList.remove('hidden');
+  }
+
+  updateWishlistButtonUI();
+}
+
+function logoutUser() {
+  currentUser = null;
+  localStorage.removeItem('kiosk_user_email');
+
+  const loginText = document.getElementById('login-text');
+  if (loginText) {
+    loginText.innerText = 'Login';
+  }
+
+  const wishlistBtn = document.getElementById('btn-user-wishlist');
+  if (wishlistBtn) {
+    wishlistBtn.classList.add('hidden');
+  }
+
+  closeUserWishlistView();
+  updateWishlistButtonUI();
+}
+
+async function checkSavedUserSession() {
+  const savedEmail = localStorage.getItem('kiosk_user_email');
+  if (!savedEmail) return;
+
+  try {
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('*')
+      .ilike('email', savedEmail)
+      .eq('account_type', 'gamer')
+      .single();
+
+    if (user) {
+      setCurrentUser(user);
+    }
+  } catch (err) {
+    console.error('Session restore failed:', err);
+  }
+}
+
+/* ==================== WISHLIST VIEW MODAL ==================== */
+
+async function removeFromWishlist(gameTitle) {
+  if (!currentUser) return;
+
+  let wishlistArray = currentUser.wishlist ? currentUser.wishlist.split(', ').filter(Boolean) : [];
+  wishlistArray = wishlistArray.filter(t => t !== gameTitle);
+  const updatedWishlist = wishlistArray.join(', ');
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ wishlist: updatedWishlist })
+    .eq('id', currentUser.id);
+
+  if (!error) {
+    currentUser.wishlist = updatedWishlist;
+    updateWishlistButtonUI();
+    openUserWishlistView();
+  } else {
+    console.error('Failed to remove game from wishlist:', error);
+    alert('Failed to remove game. Please try again.');
+  }
+}
+
+async function openUserWishlistView() {
+  if (!currentUser) return;
+
+  const modal = document.getElementById('modal-wishlist-view');
+  const container = document.getElementById('wishlist-items-container');
+  if (!modal || !container) return;
+
+  container.innerHTML = '<div class="col-span-3 text-center text-xs text-zinc-400 py-8">Loading wishlist...</div>';
+  modal.classList.remove('hidden');
+
+  try {
+    const { data: user, error } = await supabaseClient
+      .from('users')
+      .select('wishlist')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (error || !user) {
+      container.innerHTML = '<div class="col-span-3 text-center text-xs text-rose-500 py-8">Failed to load wishlist.</div>';
+      return;
+    }
+
+    currentUser.wishlist = user.wishlist || '';
+    const savedTitles = user.wishlist ? user.wishlist.split(', ').filter(Boolean) : [];
+
+    if (savedTitles.length === 0) {
+      container.innerHTML = '<div class="col-span-3 text-center text-xs text-zinc-400 py-8">Your wishlist is currently empty.</div>';
+      return;
+    }
+
+    const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
+
+    container.innerHTML = wishlistGames.map(game => {
+      const title = game.title || game.name;
+      return `
+        <div class="bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 flex flex-col h-fit hover:border-amber-400 transition-colors">
+          <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="cursor-pointer">
+            <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-1.5 bg-zinc-950" />
+            <h4 class="text-[10px] font-bold text-amber-400 leading-tight truncate">${title}</h4>
+            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${game.price || '$0.00'}</p>
           </div>
-
-          <div class="flex flex-col gap-2 mt-auto">
-            <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">PRINT</button>
-            <button id="btn-wishlist" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>
-            <button id="btn-cancel" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-3">
-          <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
-          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-zinc-700">
-            <!-- Local MP4 Player -->
-            <video id="preview-video" autoplay loop muted class="w-full h-full object-cover">
-              <source id="preview-video-src" src="" type="video/mp4" />
-            </video>
-
-            <!-- YouTube Embed Player -->
-            <iframe id="preview-iframe" class="w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-            <img id="preview-play-icon" src="assets/brand/icon-play.png" class="absolute w-12 h-12 pointer-events-none opacity-80" alt="" />
-            <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded z-10 pointer-events-none">PREVIEW VIDEO</span>
-          </div>
-
-          <div id="screen-grabs-container" class="grid grid-cols-3 gap-2"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SCREENSHOT LIGHTBOX MODAL -->
-  <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[70] p-6 backdrop-blur-md">
-    <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">
-      ✕
-    </button>
-
-    <div class="relative flex items-center justify-center max-w-3xl w-full">
-      <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
-        ‹
-      </button>
-
-      <img id="lightbox-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-2xl border-4 border-zinc-700 shadow-2xl" alt="Preview Large" />
-
-      <button id="btn-lightbox-next" class="absolute right-2 md:-right-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
-        ›
-      </button>
-    </div>
-  </div>
-
-  <!-- ==================== SCREEN: INSERT CARTRIDGE ==================== -->
-  <div id="screen-insert-cartridge" class="screen hidden flex-col items-center justify-between h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">
-      PLEASE INSERT CARTRIDGE
-    </h1>
-
-    <div class="relative max-w-md my-auto flex items-center justify-center">
-      <img src="assets/brand/insert-cartridge.png" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[50vh] object-contain animate-bounce" />
-    </div>
-
-    <div class="flex flex-col gap-3 w-full max-w-xs mb-4">
-      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
-        DONE
-      </button>
-      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">
-        GO BACK
-      </button>
-    </div>
-  </div>
-
-  <!-- ==================== SCREEN 4: PROGRESS ==================== -->
-  <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950 relative">
-    <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
-
-    <div class="relative mb-12 flex flex-col items-center justify-center">
-      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[260px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
-        <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
-              stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
-      </svg>
-
-      <div class="w-56 h-64 relative flex items-center justify-center z-10">
-        <img src="assets/brand/cartridge-stack.png" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
-        <div id="printing-cart-title" class="relative z-10 bg-zinc-950/90 text-amber-400 text-[10px] p-2 rounded max-w-[130px] text-center font-bold truncate border border-amber-500/50">
-          GAME TITLE
-        </div>
-      </div>
-
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-4 -left-4 w-8 h-8 animate-pulse z-20" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-2 -right-4 w-6 h-6 animate-bounce z-20" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-4 right-2 w-8 h-8 animate-pulse z-20" />
-    </div>
-
-    <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner z-10">
-      <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
-    </div>
-    <div class="mt-4 text-xs tracking-widest text-zinc-400 z-10">Loading...</div>
-  </div>
-
-  <!-- ==================== SUCCESS SCREEN ==================== -->
-  <div id="screen-success" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 mb-6 tracking-wide">
-      SUCCESS!
-    </h1>
-    <img src="assets/brand/bee-flying.png" alt="Happy Bee" class="w-20 h-20 mb-6 animate-bounce" />
-    <p class="text-zinc-200 text-sm max-w-lg mb-8 leading-relaxed">
-      Please remove your cartridge from the slot.
-    </p>
-
-    <div class="flex flex-col gap-3 w-full max-w-xs">
-      <button id="btn-success-label" class="bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
-        Get Your Label!
-      </button>
-      <button id="btn-success-home" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl font-bold text-xs border border-zinc-600">
-        Home
-      </button>
-    </div>
-  </div>
-
-  <!-- ==================== SCREEN 5: FIXED ERROR/FAIL SCREEN ==================== -->
-  <div id="screen-error" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-xl md:text-2xl font-bold text-rose-500 mb-6 tracking-wide">
-      ERROR: PRINTING FAILED
-    </h1>
-    <img src="assets/brand/bee-sad.png" alt="Sad Bee" class="w-20 h-20 mb-6 object-contain animate-bounce" />
-    <p class="text-zinc-300 text-xs max-w-md mb-8 leading-relaxed">
-      Something went wrong while flashing the cartridge. Please notify a team member for assistance.
-    </p>
-    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl text-xs border border-zinc-600 font-bold">
-      Return to Home
-    </button>
-  </div>
-
-  <!-- WISHLIST POPUP MODAL -->
-  <div id="modal-wishlist-auth" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-6 backdrop-blur-md z-[60]">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
-      <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
-        <h2 class="text-sm font-bold tracking-wide text-amber-400">Save to Wishlist</h2>
-      </div>
-
-      <div class="p-6 flex flex-col gap-4">
-        <p class="text-[10px] text-zinc-300 leading-relaxed text-center">
-          Enter your account details to add <span id="wishlist-game-title" class="text-amber-400 font-bold">this game</span> to your wishlist.
-        </p>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-[9px] uppercase text-zinc-400">Email Address</label>
-          <input 
-            type="email" 
-            id="wishlist-email-input" 
-            placeholder="gamer@example.com" 
-            autocomplete="off"
-            data-lpignore="true"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500" 
-          />
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-[9px] uppercase text-zinc-400">4-Digit PIN</label>
-          <input 
-            type="password" 
-            id="wishlist-pin-input" 
-            maxlength="4" 
-            placeholder="••••" 
-            autocomplete="new-password"
-            data-lpignore="true"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" 
-          />
-        </div>
-
-        <p id="wishlist-error-msg" class="hidden text-[10px] text-rose-500 text-center font-bold">
-          Does Not Match, try again.
-        </p>
-
-        <div class="flex flex-col gap-2 mt-2">
-          <button id="btn-save-wishlist" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg">
-            SAVE TO WISHLIST
+          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1 rounded-lg border border-rose-600 transition-colors">
+            Remove
           </button>
-          <button id="btn-cancel-wishlist" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">
-            Cancel
-          </button>
         </div>
-      </div>
-    </div>
-  </div>
+      `;
+    }).join('');
 
-  <script src="app.js?v=2"></script>
-</body>
-</html>
+  } catch (err) {
+    console.error('Error opening user wishlist:', err);
+    container.innerHTML = '<div class="col-span-3 text-center text-xs text-rose-500 py-8">Error loading wishlist.</div>';
+  }
+}
+
+function closeUserWishlistView() {
+  const modal = document.getElementById('modal-wishlist-view');
+  if (modal) modal.classList.add('hidden');
+}
+
+/* ==================== WISHLIST AUTH MODAL LOGIC ==================== */
+
+function openWishlistAuthModal(game = null) {
+  if (game) selectedGameForWishlist = game;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
+  
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'SAVE TO WISHLIST';
+
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function openLoginModal() {
+  selectedGameForWishlist = null;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = 'Account Login';
+
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'LOGIN';
+
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWishlistAuthModal() {
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleWishlistSubmission() {
+  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase();
+  const pinInput = document.getElementById('wishlist-pin-input').value.trim();
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  const saveBtn = document.getElementById('btn-save-wishlist');
+
+  if (!emailInput || !/^\d{4}$/.test(pinInput)) {
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'PROCESSING...';
+
+  try {
+    const { data: user, error: loginError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('email', emailInput)
+      .eq('pin', pinInput)
+      .eq('account_type', 'gamer')
+      .single();
+
+    if (loginError || !user) {
+      if (errorMsg) {
+        errorMsg.innerText = 'Does Not Match, try again.';
+        errorMsg.classList.remove('hidden');
+      }
+      saveBtn.disabled = false;
+      saveBtn.innerText = selectedGameForWishlist ? 'SAVE TO WISHLIST' : 'LOGIN';
+      return;
+    }
+
+    setCurrentUser(user);
+
+    if (selectedGameForWishlist) {
+      await toggleGameWishlistStatus();
+      closeWishlistAuthModal();
+    } else {
+      closeWishlistAuthModal();
+    }
+
+  } catch (err) {
+    console.error('Wishlist/Login error:', err);
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+/* ==================== ROM PRINTING & FLASHING LOGIC ==================== */
+
+async function prepareAndPrintGame(game) {
+  if (!game?.rom_url) {
+    console.error('No ROM URL found for this game in Supabase.');
+    handleHardwareError({
+      error_type: 'NO_ROM',
+      message: 'No ROM URL available for this game.'
+    });
+    return;
+  }
+
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) progressBar.style.width = '10%';
+
+  try {
+    console.log(`Sending flash request for ${game.title || game.name}...`);
+    if (progressBar) progressBar.style.width = '40%';
+
+    const response = await fetch('http://127.0.0.1:5000/flash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rom_url: game.rom_url })
+    });
+
+    if (progressBar) progressBar.style.width = '80%';
+
+    const result = await response.json();
+
+    if (response.ok && result.status === 'success') {
+      if (progressBar) progressBar.style.width = '100%';
+      console.log('Flash Output:', result.output);
+      
+      setTimeout(() => {
+        navigateTo('screen-success');
+      }, 1000);
+
+    } else {
+      console.error('Flashing failed:', result.message || result.error);
+      handleHardwareError(result);
+    }
+
+  } catch (err) {
+    console.error('Network or hardware error during flash:', err);
+    handleHardwareError({
+      error_type: 'NO_BRIDGE',
+      message: 'Cannot connect to the hardware bridge service.'
+    });
+  }
+}
+
+function handleHardwareError(errorData) {
+  const errorTitleEl = document.querySelector('#screen-error h1');
+  const errorMsgEl = document.querySelector('#screen-error p');
+
+  if (errorData.error_type === 'NO_HARDWARE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'HARDWARE UNPLUGGED';
+    if (errorMsgEl) errorMsgEl.innerText = 'The game flasher is not connected to the system. Please ensure the USB cable is plugged in.';
+  } else if (errorData.error_type === 'NO_CARTRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'NO CARTRIDGE DETECTED';
+    if (errorMsgEl) errorMsgEl.innerText = 'Please insert a blank cartridge firmly into the slot before printing.';
+  } else if (errorData.error_type === 'NO_BRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'BRIDGE SERVICE DOWN';
+    if (errorMsgEl) errorMsgEl.innerText = 'Cannot connect to the local bridge background service on the Pi.';
+  } else {
+    if (errorTitleEl) errorTitleEl.innerText = 'ERROR: PRINTING FAILED';
+    if (errorMsgEl) errorMsgEl.innerText = errorData.message || 'Something went wrong while flashing. Please notify a team member.';
+  }
+
+  navigateTo('screen-error');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadGamesFromSupabase();
+  checkSavedUserSession();
+
+  document.getElementById('search-input')?.addEventListener('input', applyFilters);
+
+  document.getElementById('screen-landing')?.addEventListener('click', () => {
+    navigateTo('screen-browse');
+  });
+
+  document.getElementById('btn-cancel')?.addEventListener('click', () => {
+    navigateTo('screen-browse');
+  });
+
+  document.getElementById('btn-error-reset')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-home')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-label')?.addEventListener('click', () => {
+    alert('Printing label...');
+  });
+
+  document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
+  document.getElementById('btn-close-wishlist-view')?.addEventListener('click', closeUserWishlistView);
+
+  document.getElementById('btn-wishlist')?.addEventListener('click', toggleGameWishlistStatus);
+  document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
+  document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
+
+  document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
+  document.getElementById('btn-lightbox-next')?.addEventListener('click', lightboxNext);
+  document.getElementById('btn-lightbox-prev')?.addEventListener('click', lightboxPrev);
+
+  document.getElementById('btn-login')?.addEventListener('click', () => {
+    if (currentUser) {
+      if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
+        logoutUser();
+      }
+    } else {
+      openLoginModal();
+    }
+  });
+
+  document.getElementById('btn-start-print')?.addEventListener('click', () => {
+    navigateTo('screen-insert-cartridge');
+  });
+
+  document.getElementById('btn-cartridge-done')?.addEventListener('click', async () => {
+    const cartTitle = document.getElementById('printing-cart-title');
+    if (cartTitle && selectedGameForWishlist) {
+      cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
+    }
+
+    navigateTo('screen-progress');
+
+    if (selectedGameForWishlist) {
+      await prepareAndPrintGame(selectedGameForWishlist);
+    } else {
+      handleHardwareError({
+        error_type: 'NO_GAME_SELECTED',
+        message: 'No game selected.'
+      });
+    }
+
+    logoutUser();
+  });
+
+  document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
+    navigateTo('modal-checkout');
+  });
+});
