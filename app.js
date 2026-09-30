@@ -11,6 +11,20 @@ let currentCategory = 'all';
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
 
+/* ==================== HELPER: URL FORMATTER ==================== */
+
+// Automatically converts Google Drive share links into direct viewable image URLs
+function formatImageUrl(url) {
+  if (!url) return '';
+  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch && driveMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
+  }
+  return url;
+}
+
+/* ==================== SUPABASE DATA LOADING ==================== */
+
 async function loadGamesFromSupabase() {
   const { data, error } = await supabaseClient
     .from('games')
@@ -21,15 +35,42 @@ async function loadGamesFromSupabase() {
     return;
   }
 
-  GAMES_DATA = data.map(game => ({
-    ...game,
-    rom_url: game.rom_url || '',
-    screenshots: [
-      'assets/brand/snap.png',
-      'assets/brand/snap.png',
-      'assets/brand/snap.png'
-    ]
-  }));
+  GAMES_DATA = data.map(game => {
+    // 1. Resolve cover image URL and format Google Drive links automatically
+    const rawImageUrl = game.image_url || game.cover_url || game.cartridge_image_url || '';
+    const imageUrl = formatImageUrl(rawImageUrl);
+
+    // 2. Dynamically parse gallery screenshots from Supabase column
+    let gallery = [];
+    if (game.screenshots) {
+      if (Array.isArray(game.screenshots)) {
+        gallery = game.screenshots.map(formatImageUrl);
+      } else if (typeof game.screenshots === 'string') {
+        try {
+          const parsed = JSON.parse(game.screenshots);
+          gallery = (Array.isArray(parsed) ? parsed : [game.screenshots]).map(formatImageUrl);
+        } catch (e) {
+          gallery = game.screenshots.split(',').map(s => s.trim()).filter(Boolean).map(formatImageUrl);
+        }
+      }
+    }
+
+    // 3. Fallback placeholder if screenshots column is empty or NULL
+    if (gallery.length === 0) {
+      gallery = [
+        'assets/brand/snap.png',
+        'assets/brand/snap.png',
+        'assets/brand/snap.png'
+      ];
+    }
+
+    return {
+      ...game,
+      image_url: imageUrl,
+      rom_url: game.rom_url || '',
+      screenshots: gallery
+    };
+  });
 
   renderGames(GAMES_DATA);
 }
