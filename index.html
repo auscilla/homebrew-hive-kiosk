@@ -11,8 +11,32 @@
 </head>
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
+  <!-- ==================== SCREEN 0: STORE SETUP LOGIN ==================== -->
+  <div id="screen-store-login" class="screen active flex flex-col items-center justify-center h-full p-12 text-center bg-zinc-950 z-[100]">
+    <img src="assets/brand/bee-flying.png" alt="Bee" class="w-16 h-16 mb-6 animate-bounce" />
+    <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mb-2 tracking-wide">
+      KIOSK SETUP
+    </h1>
+    <p class="text-zinc-400 text-xs mb-8">Authenticate this machine to your store account.</p>
+
+    <div class="bg-zinc-900 border-4 border-zinc-700 rounded-3xl w-full max-w-md p-8 flex flex-col gap-4">
+      <div class="flex flex-col gap-1 text-left">
+        <label class="text-[9px] uppercase text-zinc-400">Store Email</label>
+        <input type="email" id="store-login-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+      </div>
+      <div class="flex flex-col gap-1 text-left mb-2">
+        <label class="text-[9px] uppercase text-zinc-400">4-Digit Authorization Code</label>
+        <input type="password" id="store-login-pin" maxlength="4" placeholder="••••" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+      </div>
+      <p id="store-login-error" class="hidden text-[10px] text-rose-500 font-bold mb-2">Invalid store credentials.</p>
+      <button id="btn-store-login" class="bg-amber-500 hover:bg-amber-400 text-black py-4 rounded-xl font-bold text-sm shadow-lg w-full tracking-wider">
+        ACTIVATE KIOSK
+      </button>
+    </div>
+  </div>
+
   <!-- ==================== SCREEN 1: LANDING ==================== -->
-  <div id="screen-landing" class="screen active flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
+  <div id="screen-landing" class="screen hidden flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
     <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
       Print Your Own Video Game!
     </h1>
@@ -22,18 +46,14 @@
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
-
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
-
       <div class="relative w-64 h-72 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
     </div>
 
     <div class="mb-6">
-      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-3">
-        With Homebrew Hive
-      </h2>
+      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-3">With Homebrew Hive</h2>
       <p class="text-amber-400 text-xs animate-pulse">Tap Screen to Begin</p>
     </div>
   </div>
@@ -45,22 +65,13 @@
         <button id="btn-login" class="bg-zinc-700 px-4 py-2 rounded-lg text-xs hover:bg-zinc-600 font-bold">
           <span id="login-text">Login</span>
         </button>
-
         <button id="btn-user-wishlist" class="hidden bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-lg text-xs font-bold transition-colors">
           WISHLIST
         </button>
       </div>
-
       <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="SEARCH GAMES..." 
-          autocomplete="off"
-          class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider"
-        />
+        <input type="text" id="search-input" placeholder="SEARCH GAMES..." autocomplete="off" class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider" />
       </div>
-
       <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
         <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
         <span>HOME</span>
@@ -75,7 +86,6 @@
       <button onclick="filterCategory('Action')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Action</button>
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
-
     <div id="game-grid" class="grid grid-cols-4 gap-4 overflow-y-auto flex-1 pr-2"></div>
   </div>
 
@@ -84,14 +94,9 @@
     <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
       <div class="bg-zinc-700 py-3 px-6 flex justify-between items-center border-b border-zinc-600">
         <h2 class="text-sm font-bold tracking-wide text-amber-400">My Wishlist</h2>
-        <button id="btn-close-wishlist-view" class="bg-rose-800 hover:bg-rose-700 text-white font-bold px-3 py-1 rounded text-xs">
-          ✕
-        </button>
+        <button id="btn-close-wishlist-view" class="bg-rose-800 hover:bg-rose-700 text-white font-bold px-3 py-1 rounded text-xs">✕</button>
       </div>
-
-      <div id="wishlist-items-container" class="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1">
-        <!-- Dynamically populated by app.js -->
-      </div>
+      <div id="wishlist-items-container" class="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1"></div>
     </div>
   </div>
 
@@ -113,7 +118,6 @@
               <div id="detail-price" class="text-xs text-zinc-300 mt-1">Price: $0.00</div>
             </div>
           </div>
-
           <div class="flex flex-col gap-2 mt-auto">
             <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">PRINT</button>
             <button id="btn-wishlist" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>
@@ -123,25 +127,16 @@
 
         <div class="flex flex-col gap-3 h-fit self-start w-full">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
-          
-          <!-- STRICT 16:9 BULLETPROOF CONTAINER -->
           <div class="relative w-full pt-[56.25%] bg-black rounded-xl overflow-hidden border border-zinc-700 block">
-            
-            <!-- Local MP4 Player -->
             <video id="preview-video" autoplay loop muted class="absolute top-0 left-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
-
-            <!-- YouTube Embed Player -->
             <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-            <!-- Play Icon Overlay -->
             <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
               <img id="preview-play-icon" src="assets/brand/icon-play.png" class="w-12 h-12 opacity-80" alt="" />
               <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
             </div>
           </div>
-
           <div id="screen-grabs-container" class="grid grid-cols-3 gap-2 mt-1"></div>
         </div>
       </div>
@@ -150,65 +145,39 @@
 
   <!-- SCREENSHOT LIGHTBOX MODAL -->
   <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[70] p-6 backdrop-blur-md">
-    <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">
-      ✕
-    </button>
-
+    <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">✕</button>
     <div class="relative flex items-center justify-center max-w-3xl w-full">
-      <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
-        ‹
-      </button>
-
+      <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">‹</button>
       <img id="lightbox-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-2xl border-4 border-zinc-700 shadow-2xl" alt="Preview Large" />
-
-      <button id="btn-lightbox-next" class="absolute right-2 md:-right-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">
-        ›
-      </button>
+      <button id="btn-lightbox-next" class="absolute right-2 md:-right-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">›</button>
     </div>
   </div>
 
   <!-- ==================== SCREEN: INSERT CARTRIDGE ==================== -->
   <div id="screen-insert-cartridge" class="screen hidden flex-col items-center justify-between h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">
-      PLEASE INSERT CARTRIDGE
-    </h1>
-
+    <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">PLEASE INSERT CARTRIDGE</h1>
     <div class="relative max-w-md my-auto flex items-center justify-center">
       <img src="assets/brand/insert-cartridge.png" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[50vh] object-contain animate-bounce" />
     </div>
-
     <div class="flex flex-col gap-3 w-full max-w-xs mb-4">
-      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
-        DONE
-      </button>
-      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">
-        GO BACK
-      </button>
+      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">DONE</button>
+      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">GO BACK</button>
     </div>
   </div>
 
   <!-- ==================== SCREEN 4: PROGRESS ==================== -->
   <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950 relative">
     <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
-
     <div class="relative mb-12 flex flex-col items-center justify-center">
       <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[260px] pointer-events-none z-0 opacity-80" viewBox="0 0 520 340" fill="none">
-        <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
-              stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
+        <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
-
       <div class="w-56 h-64 relative flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-stack.png" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
-        <div id="printing-cart-title" class="relative z-10 bg-zinc-950/90 text-amber-400 text-[10px] p-2 rounded max-w-[130px] text-center font-bold truncate border border-amber-500/50">
-          GAME TITLE
-        </div>
+        <div id="printing-cart-title" class="relative z-10 bg-zinc-950/90 text-amber-400 text-[10px] p-2 rounded max-w-[130px] text-center font-bold truncate border border-amber-500/50">GAME TITLE</div>
       </div>
-
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-4 -left-4 w-8 h-8 animate-pulse z-20" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -top-2 -right-4 w-6 h-6 animate-bounce z-20" />
-      <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -bottom-4 right-2 w-8 h-8 animate-pulse z-20" />
     </div>
-
     <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner z-10">
       <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
     </div>
@@ -217,36 +186,21 @@
 
   <!-- ==================== SUCCESS SCREEN ==================== -->
   <div id="screen-success" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 mb-6 tracking-wide">
-      SUCCESS!
-    </h1>
+    <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 mb-6 tracking-wide">SUCCESS!</h1>
     <img src="assets/brand/bee-flying.png" alt="Happy Bee" class="w-20 h-20 mb-6 animate-bounce" />
-    <p class="text-zinc-200 text-sm max-w-lg mb-8 leading-relaxed">
-      Please remove your cartridge from the slot.
-    </p>
-
+    <p class="text-zinc-200 text-sm max-w-lg mb-8 leading-relaxed">Please remove your cartridge from the slot.</p>
     <div class="flex flex-col gap-3 w-full max-w-xs">
-      <button id="btn-success-label" class="bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">
-        Get Your Label!
-      </button>
-      <button id="btn-success-home" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl font-bold text-xs border border-zinc-600">
-        Home
-      </button>
+      <button id="btn-success-label" class="bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">Get Your Label!</button>
+      <button id="btn-success-home" class="bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl font-bold text-xs border border-zinc-600">Home</button>
     </div>
   </div>
 
-  <!-- ==================== SCREEN 5: FIXED ERROR/FAIL SCREEN ==================== -->
+  <!-- ==================== ERROR SCREEN ==================== -->
   <div id="screen-error" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
-    <h1 class="text-xl md:text-2xl font-bold text-rose-500 mb-6 tracking-wide">
-      ERROR: PRINTING FAILED
-    </h1>
+    <h1 class="text-xl md:text-2xl font-bold text-rose-500 mb-6 tracking-wide">ERROR: PRINTING FAILED</h1>
     <img src="assets/brand/bee-sad.png" alt="Sad Bee" class="w-20 h-20 mb-6 object-contain animate-bounce" />
-    <p class="text-zinc-300 text-xs max-w-md mb-8 leading-relaxed">
-      Something went wrong while flashing the cartridge. Please notify a team member for assistance.
-    </p>
-    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl text-xs border border-zinc-600 font-bold">
-      Return to Home
-    </button>
+    <p class="text-zinc-300 text-xs max-w-md mb-8 leading-relaxed">Something went wrong while flashing the cartridge.</p>
+    <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl text-xs border border-zinc-600 font-bold">Return to Home</button>
   </div>
 
   <!-- WISHLIST POPUP MODAL -->
@@ -255,53 +209,25 @@
       <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
         <h2 class="text-sm font-bold tracking-wide text-amber-400">Save to Wishlist</h2>
       </div>
-
       <div class="p-6 flex flex-col gap-4">
-        <p class="text-[10px] text-zinc-300 leading-relaxed text-center">
-          Enter your account details to add <span id="wishlist-game-title" class="text-amber-400 font-bold">this game</span> to your wishlist.
-        </p>
-
+        <p class="text-[10px] text-zinc-300 leading-relaxed text-center">Enter your account details to add <span id="wishlist-game-title" class="text-amber-400 font-bold">this game</span> to your wishlist.</p>
         <div class="flex flex-col gap-1">
           <label class="text-[9px] uppercase text-zinc-400">Email Address</label>
-          <input 
-            type="email" 
-            id="wishlist-email-input" 
-            placeholder="gamer@example.com" 
-            autocomplete="off"
-            data-lpignore="true"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500" 
-          />
+          <input type="email" id="wishlist-email-input" placeholder="gamer@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white" />
         </div>
-
         <div class="flex flex-col gap-1">
           <label class="text-[9px] uppercase text-zinc-400">4-Digit PIN</label>
-          <input 
-            type="password" 
-            id="wishlist-pin-input" 
-            maxlength="4" 
-            placeholder="••••" 
-            autocomplete="new-password"
-            data-lpignore="true"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" 
-          />
+          <input type="password" id="wishlist-pin-input" maxlength="4" placeholder="••••" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center" />
         </div>
-
-        <p id="wishlist-error-msg" class="hidden text-[10px] text-rose-500 text-center font-bold">
-          Does Not Match, try again.
-        </p>
-
+        <p id="wishlist-error-msg" class="hidden text-[10px] text-rose-500 text-center font-bold">Does Not Match, try again.</p>
         <div class="flex flex-col gap-2 mt-2">
-          <button id="btn-save-wishlist" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg">
-            SAVE TO WISHLIST
-          </button>
-          <button id="btn-cancel-wishlist" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">
-            Cancel
-          </button>
+          <button id="btn-save-wishlist" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg">SAVE TO WISHLIST</button>
+          <button id="btn-cancel-wishlist" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
