@@ -20,18 +20,36 @@
     <p class="text-zinc-400 text-xs mb-8">Authenticate this machine to your store account.</p>
 
     <div class="bg-zinc-900 border-4 border-zinc-700 rounded-3xl w-full max-w-md p-8 flex flex-col gap-4">
-      <div class="flex flex-col gap-1 text-left">
-        <label class="text-[9px] uppercase text-zinc-400">Store Email</label>
-        <input type="email" id="store-login-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+      
+      <!-- Default Login Fields -->
+      <div id="login-fields-container" class="flex flex-col gap-4 w-full">
+        <div class="flex flex-col gap-1 text-left">
+          <label class="text-[9px] uppercase text-zinc-400">Store Email</label>
+          <input type="email" id="store-login-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+        </div>
+        <div class="flex flex-col gap-1 text-left mb-2">
+          <label class="text-[9px] uppercase text-zinc-400">4-Digit Authorization Code</label>
+          <input type="password" id="store-login-pin" maxlength="4" placeholder="••••" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+        </div>
+        <p id="store-login-error" class="hidden text-[10px] text-rose-500 font-bold mb-2">Invalid store credentials.</p>
+        <button id="btn-store-login" class="bg-amber-500 hover:bg-amber-400 text-black py-4 rounded-xl font-bold text-sm shadow-lg w-full tracking-wider">
+          ACTIVATE KIOSK
+        </button>
+        <button id="btn-show-reset" class="text-[10px] text-zinc-500 hover:text-amber-400 mt-2 underline w-full text-center">Forgot PIN / Reset Code</button>
       </div>
-      <div class="flex flex-col gap-1 text-left mb-2">
-        <label class="text-[9px] uppercase text-zinc-400">4-Digit Authorization Code</label>
-        <input type="password" id="store-login-pin" maxlength="4" placeholder="••••" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+
+      <!-- Hidden Reset PIN Container -->
+      <div id="reset-pin-container" class="hidden flex-col gap-3 w-full border-t border-zinc-700 pt-4">
+        <p class="text-[10px] text-zinc-400 mb-1">Enter your store email to set a new 4-digit PIN.</p>
+        <input type="email" id="reset-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+        <input type="password" id="reset-new-pin" maxlength="4" placeholder="New 4-Digit PIN" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+        <p id="reset-msg" class="hidden text-[10px] font-bold"></p>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-submit-reset" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">UPDATE</button>
+          <button id="btn-cancel-reset" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">CANCEL</button>
+        </div>
       </div>
-      <p id="store-login-error" class="hidden text-[10px] text-rose-500 font-bold mb-2">Invalid store credentials.</p>
-      <button id="btn-store-login" class="bg-amber-500 hover:bg-amber-400 text-black py-4 rounded-xl font-bold text-sm shadow-lg w-full tracking-wider">
-        ACTIVATE KIOSK
-      </button>
+
     </div>
   </div>
 
@@ -228,6 +246,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
