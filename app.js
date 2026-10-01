@@ -286,6 +286,7 @@ function lightboxPrev() {
 
 /* ==================== SESSION LOGIC (STORE & GAMER) ==================== */
 
+// Tied directly to your Supabase users table where account_type = 'store'
 async function handleStoreLogin() {
   const emailInput = document.getElementById('store-login-email').value.trim().toLowerCase();
   const pinInput = document.getElementById('store-login-pin').value.trim();
@@ -667,7 +668,7 @@ function handleHardwareError(errorData) {
   navigateTo('screen-error');
 }
 
-/* ==================== INITIALIZATION ==================== */
+/* ==================== INITIALIZATION & EVENT LISTENERS ==================== */
 
 document.addEventListener('DOMContentLoaded', () => {
   checkStoreSession(); // Boot to setup screen if not authenticated
@@ -748,4 +749,74 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
     navigateTo('modal-checkout');
   });
+
+  /* ==================== PIN RESET LOGIC ==================== */
+  document.getElementById('btn-show-reset')?.addEventListener('click', () => {
+    document.getElementById('reset-pin-container').classList.remove('hidden');
+    document.getElementById('reset-pin-container').classList.add('flex');
+    document.getElementById('login-fields-container').classList.add('hidden');
+    document.getElementById('reset-msg').classList.add('hidden');
+  });
+
+  document.getElementById('btn-cancel-reset')?.addEventListener('click', () => {
+    document.getElementById('reset-pin-container').classList.add('hidden');
+    document.getElementById('reset-pin-container').classList.remove('flex');
+    document.getElementById('login-fields-container').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-submit-reset')?.addEventListener('click', async () => {
+    const email = document.getElementById('reset-email').value.trim().toLowerCase();
+    const newPin = document.getElementById('reset-new-pin').value.trim();
+    const msgEl = document.getElementById('reset-msg');
+
+    if (!email || !/^\d{4}$/.test(newPin)) {
+      msgEl.innerText = 'Enter a valid email and 4-digit PIN.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    msgEl.innerText = 'Verifying account...';
+    msgEl.className = 'text-[10px] font-bold text-amber-400';
+    msgEl.classList.remove('hidden');
+
+    // 1. Verify the store account exists in Supabase
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .eq('account_type', 'store')
+      .single();
+
+    if (error || !data) {
+      msgEl.innerText = 'Store email not found in database.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+      return;
+    }
+
+    // 2. Overwrite the old PIN with the new one
+    const { error: updateError } = await supabaseClient
+      .from('users')
+      .update({ pin: newPin })
+      .eq('id', data.id);
+
+    if (updateError) {
+      msgEl.innerText = 'System error. Failed to update PIN.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+    } else {
+      msgEl.innerText = 'Success! You can now log in with your new PIN.';
+      msgEl.className = 'text-[10px] font-bold text-emerald-400';
+      document.getElementById('reset-email').value = '';
+      document.getElementById('reset-new-pin').value = '';
+      
+      // Auto-close the reset menu after 3 seconds
+      setTimeout(() => {
+        document.getElementById('reset-pin-container').classList.add('hidden');
+        document.getElementById('reset-pin-container').classList.remove('flex');
+        document.getElementById('login-fields-container').classList.remove('hidden');
+        msgEl.classList.add('hidden');
+      }, 3000);
+    }
+  });
+
 });
