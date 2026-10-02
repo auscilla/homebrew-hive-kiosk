@@ -6,6 +6,11 @@
   <title>Homebrew Hive Kiosk</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Virtual Keyboard Libraries -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/css/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -246,6 +251,15 @@
     </div>
   </div>
 
-  <script src="app.js?v=8"></script>
+  <!-- VIRTUAL KEYBOARD CONTAINER -->
+  <div id="keyboard-wrapper" class="hidden fixed bottom-0 left-0 w-full bg-zinc-950 border-t-4 border-amber-500 p-4 z-[9999] shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+    <div class="flex justify-between items-center mb-2 px-2">
+      <span class="text-[10px] text-amber-400 font-bold">ON-SCREEN KEYBOARD</span>
+      <button id="btn-close-keyboard" class="bg-rose-800 hover:bg-rose-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg">CLOSE</button>
+    </div>
+    <div class="simple-keyboard dark-theme"></div>
+  </div>
+
+  <script src="app.js?v=9"></script>
 </body>
 </html>
