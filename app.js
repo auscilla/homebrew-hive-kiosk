@@ -819,4 +819,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  /* ==================== VIRTUAL KEYBOARD LOGIC ==================== */
+  let activeInput = null;
+  const Keyboard = window.SimpleKeyboard.default;
+  
+  const kioskKeyboard = new Keyboard({
+    onChange: input => onChange(input),
+    onKeyPress: button => onKeyPress(button),
+    theme: "hg-theme-default hg-layout-default dark-theme",
+    layout: {
+      default: [
+        "1 2 3 4 5 6 7 8 9 0 {bksp}",
+        "q w e r t y u i o p",
+        "a s d f g h j k l @ .com",
+        "{shift} z x c v b n m _ .",
+        "{space}"
+      ],
+      shift: [
+        "! @ # $ % ^ & * ( ) {bksp}",
+        "Q W E R T Y U I O P",
+        "A S D F G H J K L",
+        "{shift} Z X C V B N M",
+        "{space}"
+      ]
+    },
+    display: {
+      "{bksp}": "⌫",
+      "{shift}": "⇧",
+      "{space}": "SPACE"
+    }
+  });
+
+  function onChange(input) {
+    if (activeInput) {
+      activeInput.value = input;
+      activeInput.dispatchEvent(new Event("input"));
+    }
+  }
+
+  function onKeyPress(button) {
+    if (button === "{shift}") {
+      let currentLayout = kioskKeyboard.options.layoutName;
+      let shiftToggle = currentLayout === "default" ? "shift" : "default";
+      kioskKeyboard.setOptions({ layoutName: shiftToggle });
+    }
+  }
+
+  // Attach the keyboard to every text, email, and password input on the page
+  document.querySelectorAll("input").forEach(input => {
+    input.addEventListener("focus", (e) => {
+      activeInput = e.target;
+      kioskKeyboard.setOptions({
+        inputName: activeInput.id
+      });
+      kioskKeyboard.setInput(activeInput.value, activeInput.id);
+      document.getElementById("keyboard-wrapper").classList.remove("hidden");
+    });
+  });
+
+  // Hide the keyboard when the close button is clicked
+  document.getElementById("btn-close-keyboard").addEventListener("click", () => {
+    document.getElementById("keyboard-wrapper").classList.add("hidden");
+    if (activeInput) activeInput.blur();
+  });
+
 });
