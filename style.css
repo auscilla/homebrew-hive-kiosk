@@ -79,3 +79,27 @@
   aspect-ratio: 1 / 1 !important;
   object-fit: cover !important;
 }
+
+/* ==================== KIOSK SCREEN SCALING ==================== */
+@media (max-width: 800px) and (max-height: 480px) {
+  body {
+    zoom: 0.75;
+  }
+}
+
+/* ==================== CUSTOM VIRTUAL KEYBOARD ==================== */
+.simple-keyboard.dark-theme {
+  background-color: #18181b;
+  border-radius: 10px;
+}
+.simple-keyboard.dark-theme .hg-button {
+  background: #27272a;
+  color: white;
+  border-bottom: 2px solid #3f3f46;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+}
+.simple-keyboard.dark-theme .hg-button:active {
+  background: #f59e0b;
+  color: black;
+}
