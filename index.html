@@ -125,15 +125,15 @@
 
   <!-- ==================== SCREEN 3: CHECKOUT MODAL ==================== -->
   <div id="modal-checkout" class="screen hidden fixed inset-0 bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm z-50">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col h-full max-h-[90vh]">
+    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col">
       <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
         <h2 class="text-lg font-bold tracking-wide">Checkout / Wishlist</h2>
       </div>
 
-      <div class="grid grid-cols-2 gap-6 p-6 h-full overflow-hidden">
+      <div class="grid grid-cols-2 gap-6 p-6">
         
         <!-- LEFT COLUMN: Details, Description, and Buttons -->
-        <div class="flex flex-col gap-3 h-full">
+        <div class="flex flex-col gap-3">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Game Details</h3>
           
           <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex gap-3 items-center">
@@ -145,15 +145,14 @@
             </div>
           </div>
 
-          <!-- NEW: Game Description Box -->
-          <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex-1 overflow-y-auto min-h-[80px]">
+          <!-- FIXED: Locked Height Game Description Box with Custom Scroll -->
+          <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 h-[110px] overflow-y-auto custom-scrollbar">
             <p id="detail-description" class="text-[10px] leading-relaxed text-zinc-300">
               <!-- JS needs to inject game description here -->
-              Loading description...
             </p>
           </div>
 
-          <!-- Buttons locked to the bottom -->
+          <!-- Buttons -->
           <div class="flex flex-col gap-2 mt-auto">
             <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">PRINT</button>
             <button id="btn-wishlist" class="bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs">Wishlist</button>
