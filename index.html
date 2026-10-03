@@ -265,11 +265,14 @@
     </div>
   </div>
 
-  <!-- VIRTUAL KEYBOARD CONTAINER -->
+  <!-- VIRTUAL KEYBOARD CONTAINER WITH NEW PREVIEW BAR -->
   <div id="keyboard-wrapper" class="hidden fixed bottom-0 left-0 w-full bg-zinc-950 border-t-4 border-amber-500 p-4 z-[9999] shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
-    <div class="flex justify-between items-center mb-2 px-2">
-      <span class="text-[10px] text-amber-400 font-bold">ON-SCREEN KEYBOARD</span>
-      <button id="btn-close-keyboard" class="bg-rose-800 hover:bg-rose-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg">CLOSE</button>
+    <div class="flex justify-between items-center mb-2 px-2 gap-4">
+      <span class="text-[10px] text-amber-400 font-bold hidden sm:block w-32">ON-SCREEN KEYBOARD</span>
+      
+      <input type="text" id="keyboard-preview-bar" readonly class="flex-1 max-w-lg bg-black border border-zinc-700 rounded-lg p-2.5 text-[10px] text-amber-400 font-bold text-center focus:outline-none tracking-widest placeholder-zinc-600" placeholder="Type here..." />
+      
+      <button id="btn-close-keyboard" class="bg-rose-800 hover:bg-rose-700 text-white text-[10px] font-bold px-4 py-2.5 rounded-lg w-24">CLOSE</button>
     </div>
     <div class="simple-keyboard dark-theme"></div>
   </div>
