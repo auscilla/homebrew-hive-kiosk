@@ -80,6 +80,18 @@
   object-fit: cover !important;
 }
 
+/* --- FIX KIOSK TOUCH SCROLLING --- */
+#game-grid {
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Prevent the browser from trying to "drag and drop" images when swiping */
+img {
+  -webkit-user-drag: none !important;
+  user-select: none !important;
+}
+
 /* ==================== CUSTOM VIRTUAL KEYBOARD ==================== */
 .simple-keyboard.dark-theme {
   background-color: #18181b;
