@@ -59,8 +59,8 @@
   </div>
 
   <!-- ==================== SCREEN 1: LANDING ==================== -->
-  <div id="screen-landing" class="screen hidden flex flex-col items-center justify-between h-full p-12 text-center bg-black cursor-pointer">
-    <h1 class="text-3xl md:text-5xl tracking-wide mt-6 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
+  <div id="screen-landing" class="screen hidden flex flex-col items-center justify-between h-full py-6 px-4 text-center bg-black cursor-pointer">
+    <h1 class="text-3xl md:text-5xl tracking-wide mt-2 text-white drop-shadow-[0_4px_0_rgba(0,0,0,1)]">
       Print Your Own Video Game!
     </h1>
 
@@ -70,13 +70,13 @@
               stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
       <img src="assets/brand/bee-flying.png" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
-      <div class="relative w-64 h-72 flex items-center justify-center z-10">
+      <div class="relative w-48 h-56 flex items-center justify-center z-10">
         <img src="assets/brand/cartridge-gold.png" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
     </div>
 
-    <div class="mb-6">
-      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-3">With Homebrew Hive</h2>
+    <div class="mb-2">
+      <h2 class="text-2xl md:text-4xl text-white tracking-wider mb-2">With Homebrew Hive</h2>
       <p class="text-amber-400 text-xs animate-pulse">Tap Screen to Begin</p>
     </div>
   </div>
@@ -168,11 +168,11 @@
 
   <!-- SCREENSHOT LIGHTBOX MODAL -->
   <div id="modal-lightbox" class="hidden fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[70] p-6 backdrop-blur-md">
-    <button id="btn-lightbox-close" class="absolute top-6 left-6 bg-rose-800 hover:bg-rose-700 text-white font-bold w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">✕</button>
+    <button id="btn-lightbox-close" class="absolute top-4 left-4 bg-rose-800 hover:bg-rose-700 text-white font-bold w-10 h-10 rounded-2xl flex items-center justify-center text-lg border-2 border-rose-600 shadow-xl z-10">✕</button>
     <div class="relative flex items-center justify-center max-w-3xl w-full">
-      <button id="btn-lightbox-prev" class="absolute left-2 md:-left-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">‹</button>
-      <img id="lightbox-img" src="" class="max-h-[70vh] max-w-full object-contain rounded-2xl border-4 border-zinc-700 shadow-2xl" alt="Preview Large" />
-      <button id="btn-lightbox-next" class="absolute right-2 md:-right-12 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">›</button>
+      <button id="btn-lightbox-prev" class="absolute left-2 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">‹</button>
+      <img id="lightbox-img" src="" class="max-h-[80vh] max-w-[80vw] object-contain rounded-2xl border-4 border-zinc-700 shadow-2xl" alt="Preview Large" />
+      <button id="btn-lightbox-next" class="absolute right-2 bg-amber-500 hover:bg-amber-400 text-black font-bold w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg z-10">›</button>
     </div>
   </div>
 
