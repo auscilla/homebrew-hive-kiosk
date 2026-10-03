@@ -30,11 +30,11 @@
       <div id="login-fields-container" class="flex flex-col gap-4 w-full">
         <div class="flex flex-col gap-1 text-left">
           <label class="text-[9px] uppercase text-zinc-400">Store Email</label>
-          <input type="email" id="store-login-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+          <input type="email" id="store-login-email" placeholder="shop@retrogames.com" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
         </div>
         <div class="flex flex-col gap-1 text-left mb-2">
           <label class="text-[9px] uppercase text-zinc-400">4-Digit Authorization Code</label>
-          <input type="password" id="store-login-pin" maxlength="4" placeholder="••••" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+          <input type="password" id="store-login-pin" maxlength="4" placeholder="••••" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
         </div>
         <p id="store-login-error" class="hidden text-[10px] text-rose-500 font-bold mb-2">Invalid store credentials.</p>
         <button id="btn-store-login" class="bg-amber-500 hover:bg-amber-400 text-black py-4 rounded-xl font-bold text-sm shadow-lg w-full tracking-wider">
@@ -46,8 +46,8 @@
       <!-- Hidden Reset PIN Container -->
       <div id="reset-pin-container" class="hidden flex-col gap-3 w-full border-t border-zinc-700 pt-4">
         <p class="text-[10px] text-zinc-400 mb-1">Enter your store email to set a new 4-digit PIN.</p>
-        <input type="email" id="reset-email" placeholder="shop@retrogames.com" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
-        <input type="password" id="reset-new-pin" maxlength="4" placeholder="New 4-Digit PIN" autocomplete="off" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+        <input type="email" id="reset-email" placeholder="shop@retrogames.com" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+        <input type="password" id="reset-new-pin" maxlength="4" placeholder="New 4-Digit PIN" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
         <p id="reset-msg" class="hidden text-[10px] font-bold"></p>
         <div class="flex gap-2 mt-2">
           <button id="btn-submit-reset" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">UPDATE</button>
@@ -93,7 +93,7 @@
         </button>
       </div>
       <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
-        <input type="text" id="search-input" placeholder="SEARCH GAMES..." autocomplete="off" class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider" />
+        <input type="text" id="search-input" placeholder="SEARCH GAMES..." autocomplete="new-password" class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider" />
       </div>
       <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
         <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
@@ -236,11 +236,11 @@
         <p class="text-[10px] text-zinc-300 leading-relaxed text-center">Enter your account details to add <span id="wishlist-game-title" class="text-amber-400 font-bold">this game</span> to your wishlist.</p>
         <div class="flex flex-col gap-1">
           <label class="text-[9px] uppercase text-zinc-400">Email Address</label>
-          <input type="email" id="wishlist-email-input" placeholder="gamer@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white" />
+          <input type="email" id="wishlist-email-input" placeholder="gamer@example.com" autocomplete="new-password" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-[9px] uppercase text-zinc-400">4-Digit PIN</label>
-          <input type="password" id="wishlist-pin-input" maxlength="4" placeholder="••••" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center" />
+          <input type="password" id="wishlist-pin-input" maxlength="4" placeholder="••••" autocomplete="new-password" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center" />
         </div>
         <p id="wishlist-error-msg" class="hidden text-[10px] text-rose-500 text-center font-bold">Does Not Match, try again.</p>
         <div class="flex flex-col gap-2 mt-2">
