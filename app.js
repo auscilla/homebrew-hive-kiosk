@@ -158,6 +158,9 @@ function openCheckout(gameId) {
   document.getElementById('detail-title').innerText = selectedGame.title || selectedGame.name;
   document.getElementById('detail-price').innerText = `Price: ${selectedGame.price || '$0.00'}`;
   document.getElementById('detail-img').src = selectedGame.image_url;
+  
+  // INJECTS DESCRIPTION INTO THE NEW HTML ELEMENT
+  document.getElementById('detail-description').innerText = selectedGame.description || 'No description available for this game.';
 
   const video = document.getElementById('preview-video');
   const videoSrc = document.getElementById('preview-video-src');
@@ -642,7 +645,7 @@ async function prepareAndPrintGame(game) {
     console.error('Network or hardware error during flash:', err);
     handleHardwareError({
       error_type: 'NO_BRIDGE',
-      message: 'Cannot connect to the hardware bridge service.'
+      message: 'Cannot connect to the local hardware bridge service.'
     });
   }
 }
