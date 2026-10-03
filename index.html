@@ -109,7 +109,6 @@
       <button onclick="filterCategory('Action')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Action</button>
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
-    <!-- CHANGED: grid-cols-4 to grid-cols-3 and added pb-4 -->
     <div id="game-grid" class="grid grid-cols-3 gap-5 overflow-y-auto flex-1 pr-2 pb-4"></div>
   </div>
 
@@ -126,14 +125,17 @@
 
   <!-- ==================== SCREEN 3: CHECKOUT MODAL ==================== -->
   <div id="modal-checkout" class="screen hidden fixed inset-0 bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm z-50">
-    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col">
+    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col h-full max-h-[90vh]">
       <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
         <h2 class="text-lg font-bold tracking-wide">Checkout / Wishlist</h2>
       </div>
 
-      <div class="grid grid-cols-2 gap-6 p-6">
-        <div class="flex flex-col gap-3">
+      <div class="grid grid-cols-2 gap-6 p-6 h-full overflow-hidden">
+        
+        <!-- LEFT COLUMN: Details, Description, and Buttons -->
+        <div class="flex flex-col gap-3 h-full">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Game Details</h3>
+          
           <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex gap-3 items-center">
             <img id="detail-img" src="" class="w-20 h-20 object-cover rounded-lg border border-zinc-700" alt="Cover" />
             <div>
@@ -142,16 +144,27 @@
               <div id="detail-price" class="text-xs text-zinc-300 mt-1">Price: $0.00</div>
             </div>
           </div>
+
+          <!-- NEW: Game Description Box -->
+          <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 flex-1 overflow-y-auto min-h-[80px]">
+            <p id="detail-description" class="text-[10px] leading-relaxed text-zinc-300">
+              <!-- JS needs to inject game description here -->
+              Loading description...
+            </p>
+          </div>
+
+          <!-- Buttons locked to the bottom -->
           <div class="flex flex-col gap-2 mt-auto">
             <button id="btn-start-print" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">PRINT</button>
-            <button id="btn-wishlist" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs">Wishlist</button>
+            <button id="btn-wishlist" class="bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs">Wishlist</button>
             <button id="btn-cancel" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 h-fit self-start w-full">
+        <!-- RIGHT COLUMN: Previews -->
+        <div class="flex flex-col gap-3 h-full w-full overflow-hidden">
           <h3 class="text-md font-bold border-b border-zinc-700 pb-1">Gameplay Previews</h3>
-          <div class="relative w-full pt-[56.25%] bg-black rounded-xl overflow-hidden border border-zinc-700 block">
+          <div class="relative w-full pt-[56.25%] bg-black rounded-xl overflow-hidden border border-zinc-700 block shrink-0">
             <video id="preview-video" autoplay loop muted class="absolute top-0 left-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
@@ -161,7 +174,7 @@
               <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
             </div>
           </div>
-          <div id="screen-grabs-container" class="grid grid-cols-3 gap-2 mt-1"></div>
+          <div id="screen-grabs-container" class="mt-1 pb-2"></div>
         </div>
       </div>
     </div>
