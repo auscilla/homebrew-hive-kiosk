@@ -46,10 +46,10 @@
   background: #f59e0b; /* Slightly darker when pressed */
 }
 
-/* --- FIXED 4-COLUMN GRID LAYOUT --- */
+/* --- FIXED 3-COLUMN GRID LAYOUT --- */
 #game-grid {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 1rem !important;
   align-items: start !important;
 }
