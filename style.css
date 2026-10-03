@@ -51,35 +51,37 @@
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 1.5rem !important;
-  align-items: stretch !important;
+  align-items: start !important; /* Prevents cards from stretching to row height */
 }
 
-/* Enforce the stretched height on the cards */
+/* Enforce the structure of the cards */
 #game-grid > div {
   width: 100% !important;
-  height: 100% !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-direction: column !important;
 }
 
-/* Make the bottom text container fill the remaining vertical space */
+/* Lock the text container to a precise, unchangeable height */
 #game-grid > div > div:nth-child(2) {
-  flex: 1 1 auto !important;
+  flex: none !important; /* Prevents growing/shrinking */
+  height: 90px !important; 
+  min-height: 90px !important;
+  max-height: 90px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
   margin-top: 12px !important;
 }
 
-/* Target the Title: 16px size, forced strictly to 1 line */
+/* Target the Title: 18px size, forced strictly to 1 line */
 #game-grid > div > div:nth-child(2) > div:first-child,
 #game-grid > div > div:nth-child(2) h3 {
-  font-size: 16px !important; 
+  font-size: 18px !important; /* Maximum size for 1-line fit */
   line-height: 1.2 !important;
-  white-space: nowrap !important; /* Forces text to stay on one line */
+  white-space: nowrap !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important; /* Adds "..." if it hits the exact edge */
+  text-overflow: ellipsis !important;
   margin-bottom: 8px !important;
   display: block !important;
 }
