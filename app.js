@@ -159,7 +159,6 @@ function openCheckout(gameId) {
   document.getElementById('detail-price').innerText = `Price: ${selectedGame.price || '$0.00'}`;
   document.getElementById('detail-img').src = selectedGame.image_url;
   
-  // INJECTS DESCRIPTION INTO THE NEW HTML ELEMENT
   document.getElementById('detail-description').innerText = selectedGame.description || 'No description available for this game.';
 
   const video = document.getElementById('preview-video');
@@ -289,7 +288,6 @@ function lightboxPrev() {
 
 /* ==================== SESSION LOGIC (STORE & GAMER) ==================== */
 
-// Tied directly to your Supabase users table where account_type = 'store'
 async function handleStoreLogin() {
   const emailInput = document.getElementById('store-login-email').value.trim().toLowerCase();
   const pinInput = document.getElementById('store-login-pin').value.trim();
@@ -323,7 +321,6 @@ async function handleStoreLogin() {
     currentStoreEmail = store.email;
     localStorage.setItem('kiosk_store_email', store.email);
     
-    // Hide setup, proceed to standard kiosk landing page
     document.getElementById('screen-store-login').classList.add('hidden');
     document.getElementById('screen-store-login').classList.remove('active');
     navigateTo('screen-landing');
@@ -342,7 +339,6 @@ function checkStoreSession() {
     document.getElementById('screen-store-login').classList.remove('active');
     navigateTo('screen-landing');
   } else {
-    // Force to login screen if not authenticated
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.add('hidden');
       s.classList.remove('active');
@@ -629,7 +625,6 @@ async function prepareAndPrintGame(game) {
       if (progressBar) progressBar.style.width = '100%';
       console.log('Flash Output:', result.output);
       
-      // Flash was successful: Bill the store
       await logPrintToInvoice(game);
       
       setTimeout(() => {
@@ -674,13 +669,11 @@ function handleHardwareError(errorData) {
 /* ==================== INITIALIZATION & EVENT LISTENERS ==================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  checkStoreSession(); // Boot to setup screen if not authenticated
+  checkStoreSession(); 
   loadGamesFromSupabase();
   checkSavedUserSession();
 
-  // Store Authentication Listener
   document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
-
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
@@ -737,7 +730,6 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-progress');
 
     if (selectedGameForWishlist) {
-      // Flashes the hardware, then silently logs the invoice to Supabase on success
       await prepareAndPrintGame(selectedGameForWishlist);
     } else {
       handleHardwareError({
@@ -783,7 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
     msgEl.className = 'text-[10px] font-bold text-amber-400';
     msgEl.classList.remove('hidden');
 
-    // 1. Verify the store account exists in Supabase
     const { data, error } = await supabaseClient
       .from('users')
       .select('id')
@@ -797,7 +788,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2. Overwrite the old PIN with the new one
     const { error: updateError } = await supabaseClient
       .from('users')
       .update({ pin: newPin })
@@ -812,7 +802,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('reset-email').value = '';
       document.getElementById('reset-new-pin').value = '';
       
-      // Auto-close the reset menu after 3 seconds
       setTimeout(() => {
         document.getElementById('reset-pin-container').classList.add('hidden');
         document.getElementById('reset-pin-container').classList.remove('flex');
@@ -825,6 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==================== VIRTUAL KEYBOARD LOGIC ==================== */
   let activeInput = null;
   const Keyboard = window.SimpleKeyboard.default;
+  const previewBar = document.getElementById("keyboard-preview-bar");
   
   const kioskKeyboard = new Keyboard({
     onChange: input => onChange(input),
@@ -857,6 +847,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeInput) {
       activeInput.value = input;
       activeInput.dispatchEvent(new Event("input"));
+      
+      // Mirror the typed text to the new preview bar
+      if (previewBar) {
+        if (activeInput.type === 'password') {
+          previewBar.value = '•'.repeat(input.length);
+        } else {
+          previewBar.value = input;
+        }
+      }
     }
   }
 
@@ -870,12 +869,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Attach the keyboard to every text, email, and password input on the page
   document.querySelectorAll("input").forEach(input => {
+    // Prevent the keyboard from triggering on the preview bar itself
+    if (input.id === "keyboard-preview-bar") return;
+
     input.addEventListener("focus", (e) => {
       activeInput = e.target;
       kioskKeyboard.setOptions({
         inputName: activeInput.id
       });
       kioskKeyboard.setInput(activeInput.value, activeInput.id);
+      
+      // Load the starting text into the preview bar
+      if (previewBar) {
+        if (activeInput.type === 'password') {
+          previewBar.value = '•'.repeat(activeInput.value.length);
+        } else {
+          previewBar.value = activeInput.value;
+        }
+      }
+      
       document.getElementById("keyboard-wrapper").classList.remove("hidden");
     });
   });
