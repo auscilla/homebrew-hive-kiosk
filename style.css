@@ -80,13 +80,6 @@
   object-fit: cover !important;
 }
 
-/* ==================== KIOSK SCREEN SCALING ==================== */
-@media (max-width: 800px) and (max-height: 480px) {
-  body {
-    zoom: 0.75;
-  }
-}
-
 /* ==================== CUSTOM VIRTUAL KEYBOARD ==================== */
 .simple-keyboard.dark-theme {
   background-color: #18181b;
