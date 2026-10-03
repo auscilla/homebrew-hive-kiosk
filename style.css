@@ -151,3 +151,36 @@ img {
   background: #f59e0b;
   color: black;
 }
+
+/* --- FIX GAMEPLAY PREVIEWS HORIZONTAL SCROLL --- */
+#screen-grabs-container {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  touch-action: pan-x !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 8px !important;
+}
+
+#screen-grabs-container > img {
+  flex: 0 0 calc(33.333% - 6px) !important; /* Locks width to show 3 at a time */
+  width: calc(33.333% - 6px) !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  border-radius: 0.5rem !important; /* Matches existing Tailwind rounding */
+}
+
+/* Horizontal scrollbar styling */
+#screen-grabs-container::-webkit-scrollbar {
+  height: 8px; 
+}
+#screen-grabs-container::-webkit-scrollbar-track {
+  background: #18181b;
+  border-radius: 10px;
+}
+#screen-grabs-container::-webkit-scrollbar-thumb {
+  background: #fbbf24;
+  border-radius: 10px;
+}
