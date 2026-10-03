@@ -50,8 +50,8 @@
 #game-grid {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 1.5rem !important; /* Increased gap to give larger text breathing room */
-  align-items: stretch !important; /* Forces all cards in a row to be the exact same height */
+  gap: 1.5rem !important;
+  align-items: stretch !important;
 }
 
 /* Enforce the stretched height on the cards */
@@ -72,24 +72,22 @@
   margin-top: 12px !important;
 }
 
-/* Target the Title: +2px font size, max 2 lines with ellipsis */
+/* Target the Title: 16px size, forced strictly to 1 line */
 #game-grid > div > div:nth-child(2) > div:first-child,
 #game-grid > div > div:nth-child(2) h3 {
-  font-size: 14px !important; /* Increased size */
-  line-height: 1.4 !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important; 
-  -webkit-box-orient: vertical !important;
+  font-size: 16px !important; 
+  line-height: 1.2 !important;
+  white-space: nowrap !important; /* Forces text to stay on one line */
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  min-height: 39px !important; /* Forces 2 lines of vertical space so all descriptions perfectly align horizontally */
-  margin-bottom: 6px !important;
+  text-overflow: ellipsis !important; /* Adds "..." if it hits the exact edge */
+  margin-bottom: 8px !important;
+  display: block !important;
 }
 
-/* Target the Description: +2px font size, max 3 lines with ellipsis */
+/* Target the Description: 12px size, max 3 lines with ellipsis */
 #game-grid > div > div:nth-child(2) > div:nth-child(2),
 #game-grid > div > div:nth-child(2) p {
-  font-size: 12px !important; /* Increased size */
+  font-size: 12px !important; 
   line-height: 1.4 !important;
   display: -webkit-box !important;
   -webkit-line-clamp: 3 !important;
