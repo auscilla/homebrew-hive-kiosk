@@ -814,8 +814,19 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ==================== VIRTUAL KEYBOARD LOGIC ==================== */
   let activeInput = null;
   const Keyboard = window.SimpleKeyboard.default;
-  const previewBar = document.getElementById("keyboard-preview-bar");
   
+  // Refactored Preview Bar Updater
+  function updatePreviewBar(text) {
+    const previewBar = document.getElementById("keyboard-preview-bar");
+    if (!previewBar || !activeInput) return;
+
+    if (activeInput.type === 'password') {
+      previewBar.value = '•'.repeat(text.length);
+    } else {
+      previewBar.value = text;
+    }
+  }
+
   const kioskKeyboard = new Keyboard({
     onChange: input => onChange(input),
     onKeyPress: button => onKeyPress(button),
@@ -846,16 +857,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function onChange(input) {
     if (activeInput) {
       activeInput.value = input;
-      activeInput.dispatchEvent(new Event("input"));
-      
-      // Mirror the typed text to the new preview bar
-      if (previewBar) {
-        if (activeInput.type === 'password') {
-          previewBar.value = '•'.repeat(input.length);
-        } else {
-          previewBar.value = input;
-        }
-      }
+      activeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      updatePreviewBar(input);
     }
   }
 
@@ -867,11 +870,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Attach the keyboard to every text, email, and password input on the page
   document.querySelectorAll("input").forEach(input => {
-    // Prevent the keyboard from triggering on the preview bar itself
+    // Ignore the preview bar so it doesn't open a keyboard for itself
     if (input.id === "keyboard-preview-bar") return;
 
+    // SYNC PHYSICAL KEYBOARD TYPING
+    input.addEventListener("input", (e) => {
+      if (activeInput && activeInput.id === e.target.id) {
+        kioskKeyboard.setInput(e.target.value, activeInput.id);
+        updatePreviewBar(e.target.value);
+      }
+    });
+
+    // OPEN KEYBOARD ON FOCUS
     input.addEventListener("focus", (e) => {
       activeInput = e.target;
       kioskKeyboard.setOptions({
@@ -879,20 +890,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       kioskKeyboard.setInput(activeInput.value, activeInput.id);
       
-      // Load the starting text into the preview bar
-      if (previewBar) {
-        if (activeInput.type === 'password') {
-          previewBar.value = '•'.repeat(activeInput.value.length);
-        } else {
-          previewBar.value = activeInput.value;
-        }
-      }
+      updatePreviewBar(activeInput.value);
       
       document.getElementById("keyboard-wrapper").classList.remove("hidden");
     });
   });
 
-  // Hide the keyboard when the close button is clicked
   document.getElementById("btn-close-keyboard").addEventListener("click", () => {
     document.getElementById("keyboard-wrapper").classList.add("hidden");
     if (activeInput) activeInput.blur();
