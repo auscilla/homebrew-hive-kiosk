@@ -53,7 +53,6 @@ async function loadGamesFromSupabase() {
     return;
   }
 
-  // MAP OVER DATA AND SORT BY THE NEW sort_order COLUMN
   GAMES_DATA = data.map(game => {
     const rawImageUrl = game.image_url || game.cover_url || game.cartridge_image_url || '';
     const imageUrl = formatImageUrl(rawImageUrl);
@@ -85,7 +84,6 @@ async function loadGamesFromSupabase() {
       image_url: imageUrl,
       rom_url: game.rom_url || '',
       screenshots: gallery,
-      // Default to 999 if the sort_order is blank so they automatically drop to the bottom
       sort_order: game.sort_order || 999 
     };
   }).sort((a, b) => a.sort_order - b.sort_order);
@@ -117,7 +115,7 @@ function renderGames(gamesList) {
     <div onclick="openCheckout('${game.id}')" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
       <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
       <div>
-        <h4 class="text-[11px] font-bold text-amber-400 mb-1 leading-tight">${game.title || game.name}</h4>
+        <h4 class="text-[12px] font-bold text-amber-400 mb-1 leading-tight whitespace-nowrap overflow-hidden text-ellipsis block">${game.title || game.name}</h4>
         <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${game.description}</p>
       </div>
     </div>
@@ -818,7 +816,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let activeInput = null;
   const Keyboard = window.SimpleKeyboard.default;
   
-  // Refactored Preview Bar Updater
   function updatePreviewBar(text) {
     const previewBar = document.getElementById("keyboard-preview-bar");
     if (!previewBar || !activeInput) return;
@@ -874,10 +871,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll("input").forEach(input => {
-    // Ignore the preview bar so it doesn't open a keyboard for itself
     if (input.id === "keyboard-preview-bar") return;
 
-    // SYNC PHYSICAL KEYBOARD TYPING
     input.addEventListener("input", (e) => {
       if (activeInput && activeInput.id === e.target.id) {
         kioskKeyboard.setInput(e.target.value, activeInput.id);
@@ -885,7 +880,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // OPEN KEYBOARD ON FOCUS
     input.addEventListener("focus", (e) => {
       activeInput = e.target;
       kioskKeyboard.setOptions({
