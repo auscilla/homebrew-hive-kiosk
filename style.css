@@ -80,7 +80,7 @@
 #game-grid .text-amber-400,
 #game-grid > div > div:last-child > *:first-child,
 #game-grid > div > div:nth-child(2) > *:first-child {
-  font-size: 18px !important; /* Reduced from 20px */
+  font-size: 14px !important; /* Reduced from 18px to fit longer names */
   line-height: 1.2 !important;
   white-space: nowrap !important; 
   overflow: hidden !important;
@@ -92,7 +92,7 @@
 /* Target the Description: max 3 lines with ellipsis */
 #game-grid > div > div:nth-child(2) > div:nth-child(2),
 #game-grid > div > div:nth-child(2) p {
-  font-size: 10px !important;  /* Reduced from 12px */
+  font-size: 10px !important;  /* Kept at 10px */
   line-height: 1.4 !important;
   display: -webkit-box !important;
   -webkit-line-clamp: 3 !important;
