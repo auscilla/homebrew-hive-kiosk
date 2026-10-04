@@ -614,7 +614,7 @@ async function prepareAndPrintGame(game) {
     if (progressBar) progressBar.style.width = '40%';
 
     // UPDATED PORT TO 5001
-    const response = await fetch('http://localhost:5001/flash', {
+    const response = await fetch('http://127.0.0.1:5001/flash](http://127.0.0.1:5001/flash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rom_url: game.rom_url })
