@@ -53,6 +53,7 @@ async function loadGamesFromSupabase() {
     return;
   }
 
+  // MAP OVER DATA AND SORT BY THE NEW sort_order COLUMN
   GAMES_DATA = data.map(game => {
     const rawImageUrl = game.image_url || game.cover_url || game.cartridge_image_url || '';
     const imageUrl = formatImageUrl(rawImageUrl);
@@ -83,9 +84,11 @@ async function loadGamesFromSupabase() {
       ...game,
       image_url: imageUrl,
       rom_url: game.rom_url || '',
-      screenshots: gallery
+      screenshots: gallery,
+      // Default to 999 if the sort_order is blank so they automatically drop to the bottom
+      sort_order: game.sort_order || 999 
     };
-  });
+  }).sort((a, b) => a.sort_order - b.sort_order);
 
   renderGames(GAMES_DATA);
 }
