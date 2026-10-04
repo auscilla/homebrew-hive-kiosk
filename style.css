@@ -78,10 +78,11 @@
 /* --- SLEDGEHAMMER OVERRIDE FOR GAME TITLES --- */
 #game-grid h2,
 #game-grid h3,
+#game-grid h4,
 #game-grid .text-amber-400,
 #game-grid > div > div:last-child > *:first-child,
 #game-grid > div > div:nth-child(2) > *:first-child {
-  font-size: 14px !important; /* Reduced from 18px to fit longer names */
+  font-size: 12px !important; /* Reduced to 12px to fit longer names */
   line-height: 1.2 !important;
   white-space: nowrap !important; 
   overflow: hidden !important;
@@ -93,7 +94,7 @@
 /* Target the Description: max 3 lines with ellipsis */
 #game-grid > div > div:nth-child(2) > div:nth-child(2),
 #game-grid > div > div:nth-child(2) p {
-  font-size: 10px !important;  /* Kept at 10px */
+  font-size: 8px !important;  /* Reduced to 8px */
   line-height: 1.4 !important;
   display: -webkit-box !important;
   -webkit-line-clamp: 3 !important;
