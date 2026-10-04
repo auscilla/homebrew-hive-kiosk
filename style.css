@@ -80,7 +80,7 @@
 #game-grid .text-amber-400,
 #game-grid > div > div:last-child > *:first-child,
 #game-grid > div > div:nth-child(2) > *:first-child {
-  font-size: 20px !important; 
+  font-size: 18px !important; /* Reduced from 20px */
   line-height: 1.2 !important;
   white-space: nowrap !important; 
   overflow: hidden !important;
@@ -89,10 +89,10 @@
   display: block !important;
 }
 
-/* Target the Description: 12px size, max 3 lines with ellipsis */
+/* Target the Description: max 3 lines with ellipsis */
 #game-grid > div > div:nth-child(2) > div:nth-child(2),
 #game-grid > div > div:nth-child(2) p {
-  font-size: 12px !important; 
+  font-size: 10px !important;  /* Reduced from 12px */
   line-height: 1.4 !important;
   display: -webkit-box !important;
   -webkit-line-clamp: 3 !important;
@@ -183,4 +183,25 @@ img {
 #screen-grabs-container::-webkit-scrollbar-thumb {
   background: #fbbf24;
   border-radius: 10px;
+}
+
+/* --- CUSTOM SCROLLBAR FOR SMALLER BOXES (DESCRIPTIONS) --- */
+.custom-scrollbar {
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 20px; /* Touch friendly but smaller than main grid */
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #18181b;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #fbbf24;
+  border-radius: 10px;
+  border: 5px solid #18181b;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #f59e0b;
 }
