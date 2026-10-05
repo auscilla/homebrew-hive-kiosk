@@ -269,7 +269,7 @@
         <h2 class="text-sm font-bold tracking-wide text-amber-400">Get Your Free Sticker Label!</h2>
       </div>
       
-      <!-- Email Input Form -->
+      <!-- STEP 1: Email Input Form -->
       <div id="label-email-form" class="p-6 flex flex-col gap-4">
         <p class="text-[10px] text-zinc-300 leading-relaxed text-center">
           Enter your email to receive a printable label, or have a free sticker mailed to you! We can also use this to save your Gamer profile.
@@ -279,12 +279,31 @@
           <input type="email" id="label-email-input" placeholder="gamer@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white" />
         </div>
         <div class="flex flex-col gap-2 mt-2">
-          <button id="btn-submit-label-email" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">SEND MY LABEL</button>
+          <button id="btn-submit-label-email" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">NEXT</button>
           <button id="btn-cancel-label" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs border border-zinc-600">Cancel</button>
         </div>
       </div>
 
-      <!-- Success Message (Hidden by default) -->
+      <!-- STEP 2: PIN Creation Form -->
+      <div id="label-pin-form" class="hidden p-6 flex flex-col gap-4">
+        <p class="text-[10px] text-zinc-300 leading-relaxed text-center">
+          Want to save your profile? Enter a 4-digit PIN to create a Gamer Account, or skip this step.
+        </p>
+        <div class="flex flex-col gap-1">
+          <label class="text-[9px] uppercase text-zinc-400">Create 4-Digit PIN</label>
+          <input type="password" id="label-pin-input" maxlength="4" placeholder="••••" autocomplete="new-password" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white tracking-widest text-center" />
+        </div>
+        <p id="label-pin-error" class="hidden text-[10px] text-rose-500 text-center font-bold">Please enter a valid 4-digit PIN.</p>
+        <div class="flex flex-col gap-2 mt-2">
+          <button id="btn-submit-label-pin" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">CREATE ACCOUNT</button>
+          <div class="flex gap-2">
+            <button id="btn-back-pin" class="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs border border-zinc-600">Back</button>
+            <button id="btn-skip-pin" class="flex-1 bg-amber-500 hover:bg-amber-400 text-black py-2 rounded-xl font-bold text-xs shadow-lg tracking-wider">Skip</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Success Message -->
       <div id="label-email-success" class="hidden p-6 flex flex-col gap-4 items-center text-center">
         <img src="assets/brand/bee-flying.png" class="w-16 h-16 animate-bounce" alt="Bee" />
         <h3 class="text-emerald-400 font-bold text-lg">Email Sent!</h3>
