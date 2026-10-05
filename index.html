@@ -265,6 +265,40 @@
     </div>
   </div>
 
+  <!-- Warning Modal: Triggers if they click Home without getting a label -->
+  <div id="modal-home-warning" class="modal hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="bg-zinc-900 border-2 border-rose-500 p-6 rounded-xl max-w-sm text-center">
+      <h2 class="text-xl font-bold text-rose-500 mb-2">Are you sure?</h2>
+      <p class="text-zinc-300 text-sm mb-6">Without submitting an email, we cannot send you a free sticker for the game you just printed, or offer manuals, cases, and other exclusive merch!</p>
+      <div class="flex flex-col gap-4 justify-center">
+        <button id="btn-warning-stay" class="bg-amber-500 text-black px-4 py-2 rounded-lg font-bold text-sm">Wait, I want my sticker!</button>
+        <button id="btn-warning-leave" class="bg-zinc-700 text-white px-4 py-2 rounded-lg font-bold text-sm">I'm sure, take me home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Capture Screen -->
+  <div id="screen-label-email" class="screen hidden flex-col items-center justify-center h-full text-center">
+    <h1 class="text-3xl font-bold text-amber-400 mb-4">Get Your Free Label!</h1>
+    <p class="text-zinc-300 mb-6 max-w-md mx-auto">Enter your email to get instructions on how to print your sticker at home, or have one mailed to you. Plus, get access to manuals and cases!</p>
+    
+    <input type="email" id="label-email-input" class="p-3 rounded-lg bg-zinc-800 text-white border border-zinc-600 mb-4 w-72 text-center focus:border-amber-400 outline-none" placeholder="Enter your email address">
+    
+    <label class="flex items-center justify-center text-zinc-300 text-sm mb-8 cursor-pointer">
+      <input type="checkbox" id="label-create-account" class="mr-3 w-4 h-4 accent-amber-500">
+      Create a free gamer account to save my wishlist and history
+    </label>
+
+    <button id="btn-submit-label-email" class="bg-amber-500 text-black px-10 py-3 rounded-xl font-bold text-lg hover:bg-amber-400 transition-colors">Submit</button>
+  </div>
+
+  <!-- Final Success Message Screen -->
+  <div id="screen-label-success" class="screen hidden flex-col items-center justify-center h-full text-center">
+    <h1 class="text-4xl font-bold text-emerald-400 mb-4">You're all set!</h1>
+    <p class="text-zinc-300 max-w-md mx-auto text-lg mb-8">Keep an eye on your inbox for an email with instructions on how to print your sticker at home or get one mailed directly to you!</p>
+    <button id="btn-finish-home" class="bg-zinc-700 hover:bg-zinc-600 text-white px-8 py-3 rounded-xl font-bold transition-colors">Return to Home</button>
+  </div>
+
   <!-- VIRTUAL KEYBOARD CONTAINER WITH NEW PREVIEW BAR -->
   <div id="keyboard-wrapper" class="hidden fixed bottom-0 left-0 w-full bg-zinc-950 border-t-4 border-amber-500 p-4 z-[9999] shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
     <div class="flex justify-between items-center mb-2 px-2 gap-4">
@@ -278,6 +312,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
