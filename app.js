@@ -1,19 +1,12 @@
 const SUPABASE_URL = 'https://tskbfytfjsiavwysecuk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
 let currentUser = null; // Gamer session
-let currentStoreEmail = null; // Store session
+let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
-
-// Safely get local storage (prevents fatal crashes in strict Incognito mode)
-try {
-  currentStoreEmail = localStorage.getItem('kiosk_store_email');
-} catch (e) {
-  console.warn("Local storage is restricted in this browser window.");
-}
 
 // Lightbox variables
 let currentLightboxImages = [];
@@ -51,7 +44,6 @@ function getYouTubeEmbedUrl(url) {
 /* ==================== SUPABASE DATA LOADING ==================== */
 
 async function loadGamesFromSupabase() {
-  if (!supabaseClient) return;
   const { data, error } = await supabaseClient
     .from('games')
     .select('*');
@@ -328,12 +320,7 @@ async function handleStoreLogin() {
     }
 
     currentStoreEmail = store.email;
-    
-    try {
-      localStorage.setItem('kiosk_store_email', store.email);
-    } catch (e) {
-      console.warn("Could not save to localStorage.");
-    }
+    localStorage.setItem('kiosk_store_email', store.email);
     
     document.getElementById('screen-store-login').classList.add('hidden');
     document.getElementById('screen-store-login').classList.remove('active');
@@ -367,9 +354,7 @@ function checkStoreSession() {
 
 function setCurrentUser(user) {
   currentUser = user;
-  try {
-    localStorage.setItem('kiosk_user_email', user.email);
-  } catch (e) {}
+  localStorage.setItem('kiosk_user_email', user.email);
 
   const loginText = document.getElementById('login-text');
   if (loginText) loginText.innerText = user.email.split('@')[0];
@@ -382,9 +367,7 @@ function setCurrentUser(user) {
 
 function logoutUser() {
   currentUser = null;
-  try {
-    localStorage.removeItem('kiosk_user_email');
-  } catch (e) {}
+  localStorage.removeItem('kiosk_user_email');
 
   const loginText = document.getElementById('login-text');
   if (loginText) loginText.innerText = 'Login';
@@ -397,11 +380,7 @@ function logoutUser() {
 }
 
 async function checkSavedUserSession() {
-  let savedEmail = null;
-  try {
-    savedEmail = localStorage.getItem('kiosk_user_email');
-  } catch(e) {}
-  
+  const savedEmail = localStorage.getItem('kiosk_user_email');
   if (!savedEmail) return;
   try {
     const { data: user } = await supabaseClient
@@ -695,13 +674,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadGamesFromSupabase();
   checkSavedUserSession();
 
-  // Allow "Enter" key to submit the login PIN form
-  document.getElementById('store-login-pin')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      handleStoreLogin();
-    }
-  });
-
   document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
 
@@ -715,6 +687,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-error-reset')?.addEventListener('click', () => {
     navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-home')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-success-label')?.addEventListener('click', () => {
+    alert('Printing label...');
   });
 
   document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
@@ -834,154 +814,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ==================== VIRTUAL KEYBOARD LOGIC ==================== */
   let activeInput = null;
-  const Keyboard = window.SimpleKeyboard?.default;
+  const Keyboard = window.SimpleKeyboard.default;
   
-  if (Keyboard) {
-    function updatePreviewBar(text) {
-      const previewBar = document.getElementById("keyboard-preview-bar");
-      if (!previewBar || !activeInput) return;
+  function updatePreviewBar(text) {
+    const previewBar = document.getElementById("keyboard-preview-bar");
+    if (!previewBar || !activeInput) return;
 
-      if (activeInput.type === 'password') {
-        previewBar.value = '•'.repeat(text.length);
-      } else {
-        previewBar.value = text;
-      }
+    if (activeInput.type === 'password') {
+      previewBar.value = '•'.repeat(text.length);
+    } else {
+      previewBar.value = text;
     }
-
-    const kioskKeyboard = new Keyboard({
-      onChange: input => onChange(input),
-      onKeyPress: button => onKeyPress(button),
-      theme: "hg-theme-default hg-layout-default dark-theme",
-      layout: {
-        default: [
-          "1 2 3 4 5 6 7 8 9 0 {bksp}",
-          "q w e r t y u i o p",
-          "a s d f g h j k l @ .com",
-          "{shift} z x c v b n m _ .",
-          "{space}"
-        ],
-        shift: [
-          "! @ # $ % ^ & * ( ) {bksp}",
-          "Q W E R T Y U I O P",
-          "A S D F G H J K L",
-          "{shift} Z X C V B N M",
-          "{space}"
-        ]
-      },
-      display: {
-        "{bksp}": "⌫",
-        "{shift}": "⇧",
-        "{space}": "SPACE"
-      }
-    });
-
-    function onChange(input) {
-      if (activeInput) {
-        activeInput.value = input;
-        activeInput.dispatchEvent(new Event("input", { bubbles: true }));
-        updatePreviewBar(input);
-      }
-    }
-
-    function onKeyPress(button) {
-      if (button === "{shift}") {
-        let currentLayout = kioskKeyboard.options.layoutName;
-        let shiftToggle = currentLayout === "default" ? "shift" : "default";
-        kioskKeyboard.setOptions({ layoutName: shiftToggle });
-      }
-    }
-
-    document.querySelectorAll("input").forEach(input => {
-      if (input.id === "keyboard-preview-bar") return;
-
-      input.addEventListener("input", (e) => {
-        if (activeInput && activeInput.id === e.target.id) {
-          kioskKeyboard.setInput(e.target.value, activeInput.id);
-          updatePreviewBar(e.target.value);
-        }
-      });
-
-      input.addEventListener("focus", (e) => {
-        activeInput = e.target;
-        kioskKeyboard.setOptions({
-          inputName: activeInput.id
-        });
-        kioskKeyboard.setInput(activeInput.value, activeInput.id);
-        
-        updatePreviewBar(activeInput.value);
-        
-        document.getElementById("keyboard-wrapper").classList.remove("hidden");
-      });
-    });
-
-    document.getElementById("btn-close-keyboard")?.addEventListener("click", () => {
-      document.getElementById("keyboard-wrapper").classList.add("hidden");
-      if (activeInput) activeInput.blur();
-    });
   }
 
-  /* ==================== NEW LABEL & WARNING FLOW LISTENERS ==================== */
-
-  // 1. Label button navigates to the email capture screen
-  document.getElementById('btn-success-label')?.addEventListener('click', () => {
-    navigateTo('screen-label-email');
-  });
-
-  // 2. Home button triggers the warning modal
-  document.getElementById('btn-success-home')?.addEventListener('click', () => {
-    document.getElementById('modal-home-warning').classList.remove('hidden');
-  });
-
-  // Warning Modal: User changes their mind and wants the sticker
-  document.getElementById('btn-warning-stay')?.addEventListener('click', () => {
-    document.getElementById('modal-home-warning').classList.add('hidden');
-  });
-
-  // Warning Modal: User insists on leaving
-  document.getElementById('btn-warning-leave')?.addEventListener('click', () => {
-    document.getElementById('modal-home-warning').classList.add('hidden');
-    navigateTo('screen-landing');
-  });
-
-  // Handle the email submission
-  document.getElementById('btn-submit-label-email')?.addEventListener('click', async () => {
-    const emailInput = document.getElementById('label-email-input').value.trim().toLowerCase();
-    const wantsAccount = document.getElementById('label-create-account').checked;
-    
-    if (!emailInput || !emailInput.includes('@')) {
-      alert('Please enter a valid email address.');
-      return;
+  const kioskKeyboard = new Keyboard({
+    onChange: input => onChange(input),
+    onKeyPress: button => onKeyPress(button),
+    theme: "hg-theme-default hg-layout-default dark-theme",
+    layout: {
+      default: [
+        "1 2 3 4 5 6 7 8 9 0 {bksp}",
+        "q w e r t y u i o p",
+        "a s d f g h j k l @ .com",
+        "{shift} z x c v b n m _ .",
+        "{space}"
+      ],
+      shift: [
+        "! @ # $ % ^ & * ( ) {bksp}",
+        "Q W E R T Y U I O P",
+        "A S D F G H J K L",
+        "{shift} Z X C V B N M",
+        "{space}"
+      ]
+    },
+    display: {
+      "{bksp}": "⌫",
+      "{shift}": "⇧",
+      "{space}": "SPACE"
     }
+  });
 
-    const btn = document.getElementById('btn-submit-label-email');
-    btn.disabled = true;
-    btn.innerText = 'Processing...';
+  function onChange(input) {
+    if (activeInput) {
+      activeInput.value = input;
+      activeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      updatePreviewBar(input);
+    }
+  }
 
-    try {
-      if (supabaseClient) {
-        await supabaseClient.from('sticker_requests').insert([{
-          email: emailInput,
-          game_title: selectedGameForWishlist?.title || selectedGameForWishlist?.name || 'Unknown Game',
-          wants_account: wantsAccount,
-          store_email: currentStoreEmail
-        }]);
+  function onKeyPress(button) {
+    if (button === "{shift}") {
+      let currentLayout = kioskKeyboard.options.layoutName;
+      let shiftToggle = currentLayout === "default" ? "shift" : "default";
+      kioskKeyboard.setOptions({ layoutName: shiftToggle });
+    }
+  }
+
+  document.querySelectorAll("input").forEach(input => {
+    if (input.id === "keyboard-preview-bar") return;
+
+    input.addEventListener("input", (e) => {
+      if (activeInput && activeInput.id === e.target.id) {
+        kioskKeyboard.setInput(e.target.value, activeInput.id);
+        updatePreviewBar(e.target.value);
       }
-    } catch (err) {
-      console.error('Failed to log sticker request:', err);
-    } finally {
-      btn.disabled = false;
-      btn.innerText = 'Submit';
+    });
+
+    input.addEventListener("focus", (e) => {
+      activeInput = e.target;
+      kioskKeyboard.setOptions({
+        inputName: activeInput.id
+      });
+      kioskKeyboard.setInput(activeInput.value, activeInput.id);
       
-      // Clear the input and navigate to the final confirmation screen
-      document.getElementById('label-email-input').value = '';
-      document.getElementById('label-create-account').checked = false;
-      navigateTo('screen-label-success');
-    }
+      updatePreviewBar(activeInput.value);
+      
+      document.getElementById("keyboard-wrapper").classList.remove("hidden");
+    });
   });
 
-  // Final confirmation screen -> Return Home
-  document.getElementById('btn-finish-home')?.addEventListener('click', () => {
-    navigateTo('screen-landing');
+  document.getElementById("btn-close-keyboard").addEventListener("click", () => {
+    document.getElementById("keyboard-wrapper").classList.add("hidden");
+    if (activeInput) activeInput.blur();
   });
 
 });
