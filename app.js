@@ -7,6 +7,7 @@ let currentUser = null; // Gamer session
 let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
+let labelEmailSubmitted = false;
 
 // Lightbox variables
 let currentLightboxImages = [];
@@ -598,6 +599,7 @@ async function logPrintToInvoice(game) {
 }
 
 async function prepareAndPrintGame(game) {
+  labelEmailSubmitted = false;
   if (!game?.rom_url) {
     handleHardwareError({
       error_type: 'NO_ROM',
@@ -613,7 +615,6 @@ async function prepareAndPrintGame(game) {
     console.log(`Sending flash request for ${game.title || game.name}...`);
     if (progressBar) progressBar.style.width = '40%';
 
-    // UPDATED PORT TO 5001
     const response = await fetch('http://127.0.0.1:5001/flash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -690,12 +691,57 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-landing');
   });
 
-  document.getElementById('btn-success-home')?.addEventListener('click', () => {
-    navigateTo('screen-landing');
+  // --- LABEL EMAIL MODAL LOGIC ---
+  document.getElementById('btn-success-label')?.addEventListener('click', () => {
+    document.getElementById('modal-label-email').classList.remove('hidden');
+    document.getElementById('label-email-form').classList.remove('hidden');
+    document.getElementById('label-email-success').classList.add('hidden');
+    document.getElementById('label-email-input').value = '';
   });
 
-  document.getElementById('btn-success-label')?.addEventListener('click', () => {
-    alert('Printing label...');
+  document.getElementById('btn-success-home')?.addEventListener('click', () => {
+    if (!labelEmailSubmitted) {
+      document.getElementById('modal-home-confirm').classList.remove('hidden');
+    } else {
+      labelEmailSubmitted = false;
+      navigateTo('screen-landing');
+    }
+  });
+
+  document.getElementById('btn-cancel-label')?.addEventListener('click', () => {
+    document.getElementById('modal-label-email').classList.add('hidden');
+  });
+
+  document.getElementById('btn-submit-label-email')?.addEventListener('click', async () => {
+    const emailInput = document.getElementById('label-email-input').value.trim();
+    if (!emailInput) return;
+
+    // Optional: Add your Supabase upsert logic here to save the email as a Gamer
+    // await supabaseClient.from('users').upsert({ email: emailInput, account_type: 'gamer' });
+
+    labelEmailSubmitted = true;
+    
+    document.getElementById('label-email-form').classList.add('hidden');
+    document.getElementById('label-email-success').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-close-label-success')?.addEventListener('click', () => {
+    document.getElementById('modal-label-email').classList.add('hidden');
+  });
+
+  // --- HOME CONFIRMATION MODAL LOGIC ---
+  document.getElementById('btn-home-confirm-stay')?.addEventListener('click', () => {
+    document.getElementById('modal-home-confirm').classList.add('hidden');
+    
+    document.getElementById('modal-label-email').classList.remove('hidden');
+    document.getElementById('label-email-form').classList.remove('hidden');
+    document.getElementById('label-email-success').classList.add('hidden');
+  });
+
+  document.getElementById('btn-home-confirm-leave')?.addEventListener('click', () => {
+    document.getElementById('modal-home-confirm').classList.add('hidden');
+    labelEmailSubmitted = false; 
+    navigateTo('screen-landing');
   });
 
   document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
