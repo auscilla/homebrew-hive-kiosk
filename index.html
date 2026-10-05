@@ -145,12 +145,9 @@
             </div>
           </div>
 
-          <!-- FIXED: Locked Height Game Description Box with Yellow Label -->
           <div class="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 h-[110px] overflow-y-auto custom-scrollbar">
             <div class="text-[9px] text-amber-400 font-bold uppercase mb-1.5">Description:</div>
-            <p id="detail-description" class="text-[10px] leading-relaxed text-zinc-300">
-              <!-- JS needs to inject game description here -->
-            </p>
+            <p id="detail-description" class="text-[10px] leading-relaxed text-zinc-300"></p>
           </div>
 
           <!-- Buttons -->
@@ -261,6 +258,54 @@
           <button id="btn-save-wishlist" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg">SAVE TO WISHLIST</button>
           <button id="btn-cancel-wishlist" class="bg-rose-800 hover:bg-rose-700 text-white py-2 rounded-xl font-bold text-xs">Cancel</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LABEL EMAIL MODAL ==================== -->
+  <div id="modal-label-email" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-6 backdrop-blur-md z-[80]">
+    <div class="bg-zinc-800 border-4 border-zinc-600 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+      <div class="bg-zinc-700 py-3 text-center border-b border-zinc-600">
+        <h2 class="text-sm font-bold tracking-wide text-amber-400">Get Your Free Sticker Label!</h2>
+      </div>
+      
+      <!-- Email Input Form -->
+      <div id="label-email-form" class="p-6 flex flex-col gap-4">
+        <p class="text-[10px] text-zinc-300 leading-relaxed text-center">
+          Enter your email to receive a printable label, or have a free sticker mailed to you! We can also use this to save your Gamer profile.
+        </p>
+        <div class="flex flex-col gap-1">
+          <label class="text-[9px] uppercase text-zinc-400">Email Address</label>
+          <input type="email" id="label-email-input" placeholder="gamer@example.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-xs text-white" />
+        </div>
+        <div class="flex flex-col gap-2 mt-2">
+          <button id="btn-submit-label-email" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">SEND MY LABEL</button>
+          <button id="btn-cancel-label" class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-xl font-bold text-xs border border-zinc-600">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Success Message (Hidden by default) -->
+      <div id="label-email-success" class="hidden p-6 flex flex-col gap-4 items-center text-center">
+        <img src="assets/brand/bee-flying.png" class="w-16 h-16 animate-bounce" alt="Bee" />
+        <h3 class="text-emerald-400 font-bold text-lg">Email Sent!</h3>
+        <p class="text-[10px] text-zinc-300 leading-relaxed">
+          Keep an eye out in your inbox for an email on how to print the sticker at home or get one mailed to you.
+        </p>
+        <button id="btn-close-label-success" class="mt-4 bg-zinc-700 hover:bg-zinc-600 text-white py-3 px-8 rounded-xl font-bold text-xs border border-zinc-600 w-full tracking-wider">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HOME CONFIRMATION MODAL ==================== -->
+  <div id="modal-home-confirm" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-6 backdrop-blur-md z-[90]">
+    <div class="bg-zinc-900 border-4 border-rose-600 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col p-6 text-center">
+      <h2 class="text-xl font-bold text-rose-500 mb-2">ARE YOU SURE?</h2>
+      <p class="text-xs text-zinc-300 mb-6 leading-relaxed">
+        Without submitting an email, we cannot send you a free sticker for the game you just printed, or offer any other add-ons like manuals, cases, and other merch related to the game!
+      </p>
+      <div class="flex flex-col gap-3">
+        <button id="btn-home-confirm-stay" class="bg-amber-500 hover:bg-amber-400 text-black py-3.5 rounded-xl font-bold text-xs shadow-lg tracking-wider">Wait, I want my sticker!</button>
+        <button id="btn-home-confirm-leave" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 py-3 rounded-xl font-bold text-xs border border-zinc-700 tracking-wider">Yes, skip the freebies</button>
       </div>
     </div>
   </div>
