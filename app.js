@@ -775,4 +775,213 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-cancel-reset')?.addEventListener('click', () => {
-    document
+    document.getElementById('reset-pin-container').classList.add('hidden');
+    document.getElementById('reset-pin-container').classList.remove('flex');
+    document.getElementById('login-fields-container').classList.remove('hidden');
+  });
+
+  document.getElementById('btn-submit-reset')?.addEventListener('click', async () => {
+    const email = document.getElementById('reset-email').value.trim().toLowerCase();
+    const newPin = document.getElementById('reset-new-pin').value.trim();
+    const msgEl = document.getElementById('reset-msg');
+
+    if (!email || !/^\d{4}$/.test(newPin)) {
+      msgEl.innerText = 'Enter a valid email and 4-digit PIN.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    msgEl.innerText = 'Verifying account...';
+    msgEl.className = 'text-[10px] font-bold text-amber-400';
+    msgEl.classList.remove('hidden');
+
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .eq('account_type', 'store')
+      .single();
+
+    if (error || !data) {
+      msgEl.innerText = 'Store email not found in database.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+      return;
+    }
+
+    const { error: updateError } = await supabaseClient
+      .from('users')
+      .update({ pin: newPin })
+      .eq('id', data.id);
+
+    if (updateError) {
+      msgEl.innerText = 'System error. Failed to update PIN.';
+      msgEl.className = 'text-[10px] font-bold text-rose-500';
+    } else {
+      msgEl.innerText = 'Success! You can now log in with your new PIN.';
+      msgEl.className = 'text-[10px] font-bold text-emerald-400';
+      document.getElementById('reset-email').value = '';
+      document.getElementById('reset-new-pin').value = '';
+      
+      setTimeout(() => {
+        document.getElementById('reset-pin-container').classList.add('hidden');
+        document.getElementById('reset-pin-container').classList.remove('flex');
+        document.getElementById('login-fields-container').classList.remove('hidden');
+        msgEl.classList.add('hidden');
+      }, 3000);
+    }
+  });
+
+  /* ==================== VIRTUAL KEYBOARD LOGIC ==================== */
+  let activeInput = null;
+  const Keyboard = window.SimpleKeyboard?.default;
+  
+  if (Keyboard) {
+    function updatePreviewBar(text) {
+      const previewBar = document.getElementById("keyboard-preview-bar");
+      if (!previewBar || !activeInput) return;
+
+      if (activeInput.type === 'password') {
+        previewBar.value = '•'.repeat(text.length);
+      } else {
+        previewBar.value = text;
+      }
+    }
+
+    const kioskKeyboard = new Keyboard({
+      onChange: input => onChange(input),
+      onKeyPress: button => onKeyPress(button),
+      theme: "hg-theme-default hg-layout-default dark-theme",
+      layout: {
+        default: [
+          "1 2 3 4 5 6 7 8 9 0 {bksp}",
+          "q w e r t y u i o p",
+          "a s d f g h j k l @ .com",
+          "{shift} z x c v b n m _ .",
+          "{space}"
+        ],
+        shift: [
+          "! @ # $ % ^ & * ( ) {bksp}",
+          "Q W E R T Y U I O P",
+          "A S D F G H J K L",
+          "{shift} Z X C V B N M",
+          "{space}"
+        ]
+      },
+      display: {
+        "{bksp}": "⌫",
+        "{shift}": "⇧",
+        "{space}": "SPACE"
+      }
+    });
+
+    function onChange(input) {
+      if (activeInput) {
+        activeInput.value = input;
+        activeInput.dispatchEvent(new Event("input", { bubbles: true }));
+        updatePreviewBar(input);
+      }
+    }
+
+    function onKeyPress(button) {
+      if (button === "{shift}") {
+        let currentLayout = kioskKeyboard.options.layoutName;
+        let shiftToggle = currentLayout === "default" ? "shift" : "default";
+        kioskKeyboard.setOptions({ layoutName: shiftToggle });
+      }
+    }
+
+    document.querySelectorAll("input").forEach(input => {
+      if (input.id === "keyboard-preview-bar") return;
+
+      input.addEventListener("input", (e) => {
+        if (activeInput && activeInput.id === e.target.id) {
+          kioskKeyboard.setInput(e.target.value, activeInput.id);
+          updatePreviewBar(e.target.value);
+        }
+      });
+
+      input.addEventListener("focus", (e) => {
+        activeInput = e.target;
+        kioskKeyboard.setOptions({
+          inputName: activeInput.id
+        });
+        kioskKeyboard.setInput(activeInput.value, activeInput.id);
+        
+        updatePreviewBar(activeInput.value);
+        
+        document.getElementById("keyboard-wrapper").classList.remove("hidden");
+      });
+    });
+
+    document.getElementById("btn-close-keyboard")?.addEventListener("click", () => {
+      document.getElementById("keyboard-wrapper").classList.add("hidden");
+      if (activeInput) activeInput.blur();
+    });
+  }
+
+  /* ==================== NEW LABEL & WARNING FLOW LISTENERS ==================== */
+
+  // 1. Label button navigates to the email capture screen
+  document.getElementById('btn-success-label')?.addEventListener('click', () => {
+    navigateTo('screen-label-email');
+  });
+
+  // 2. Home button triggers the warning modal
+  document.getElementById('btn-success-home')?.addEventListener('click', () => {
+    document.getElementById('modal-home-warning').classList.remove('hidden');
+  });
+
+  // Warning Modal: User changes their mind and wants the sticker
+  document.getElementById('btn-warning-stay')?.addEventListener('click', () => {
+    document.getElementById('modal-home-warning').classList.add('hidden');
+  });
+
+  // Warning Modal: User insists on leaving
+  document.getElementById('btn-warning-leave')?.addEventListener('click', () => {
+    document.getElementById('modal-home-warning').classList.add('hidden');
+    navigateTo('screen-landing');
+  });
+
+  // Handle the email submission
+  document.getElementById('btn-submit-label-email')?.addEventListener('click', async () => {
+    const emailInput = document.getElementById('label-email-input').value.trim().toLowerCase();
+    const wantsAccount = document.getElementById('label-create-account').checked;
+    
+    if (!emailInput || !emailInput.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-submit-label-email');
+    btn.disabled = true;
+    btn.innerText = 'Processing...';
+
+    try {
+      if (supabaseClient) {
+        await supabaseClient.from('sticker_requests').insert([{
+          email: emailInput,
+          game_title: selectedGameForWishlist?.title || selectedGameForWishlist?.name || 'Unknown Game',
+          wants_account: wantsAccount,
+          store_email: currentStoreEmail
+        }]);
+      }
+    } catch (err) {
+      console.error('Failed to log sticker request:', err);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Submit';
+      
+      // Clear the input and navigate to the final confirmation screen
+      document.getElementById('label-email-input').value = '';
+      document.getElementById('label-create-account').checked = false;
+      navigateTo('screen-label-success');
+    }
+  });
+
+  // Final confirmation screen -> Return Home
+  document.getElementById('btn-finish-home')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+});
