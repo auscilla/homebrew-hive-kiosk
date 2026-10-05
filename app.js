@@ -1,12 +1,19 @@
 const SUPABASE_URL = 'https://tskbfytfjsiavwysecuk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let GAMES_DATA = [];
 let currentUser = null; // Gamer session
-let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
+let currentStoreEmail = null; // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
+
+// Safely get local storage (prevents fatal crashes in strict Incognito mode)
+try {
+  currentStoreEmail = localStorage.getItem('kiosk_store_email');
+} catch (e) {
+  console.warn("Local storage is restricted in this browser window.");
+}
 
 // Lightbox variables
 let currentLightboxImages = [];
@@ -44,6 +51,7 @@ function getYouTubeEmbedUrl(url) {
 /* ==================== SUPABASE DATA LOADING ==================== */
 
 async function loadGamesFromSupabase() {
+  if (!supabaseClient) return;
   const { data, error } = await supabaseClient
     .from('games')
     .select('*');
@@ -320,7 +328,12 @@ async function handleStoreLogin() {
     }
 
     currentStoreEmail = store.email;
-    localStorage.setItem('kiosk_store_email', store.email);
+    
+    try {
+      localStorage.setItem('kiosk_store_email', store.email);
+    } catch (e) {
+      console.warn("Could not save to localStorage.");
+    }
     
     document.getElementById('screen-store-login').classList.add('hidden');
     document.getElementById('screen-store-login').classList.remove('active');
@@ -354,7 +367,9 @@ function checkStoreSession() {
 
 function setCurrentUser(user) {
   currentUser = user;
-  localStorage.setItem('kiosk_user_email', user.email);
+  try {
+    localStorage.setItem('kiosk_user_email', user.email);
+  } catch (e) {}
 
   const loginText = document.getElementById('login-text');
   if (loginText) loginText.innerText = user.email.split('@')[0];
@@ -367,7 +382,9 @@ function setCurrentUser(user) {
 
 function logoutUser() {
   currentUser = null;
-  localStorage.removeItem('kiosk_user_email');
+  try {
+    localStorage.removeItem('kiosk_user_email');
+  } catch (e) {}
 
   const loginText = document.getElementById('login-text');
   if (loginText) loginText.innerText = 'Login';
@@ -380,7 +397,11 @@ function logoutUser() {
 }
 
 async function checkSavedUserSession() {
-  const savedEmail = localStorage.getItem('kiosk_user_email');
+  let savedEmail = null;
+  try {
+    savedEmail = localStorage.getItem('kiosk_user_email');
+  } catch(e) {}
+  
   if (!savedEmail) return;
   try {
     const { data: user } = await supabaseClient
@@ -457,4 +478,301 @@ async function openUserWishlistView() {
           <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="cursor-pointer">
             <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-1.5 bg-zinc-950" />
             <h4 class="text-[10px] font-bold text-amber-400 leading-tight truncate">${title}</h4>
-            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${game.price || '$0.00'
+            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${game.price || '$0.00'}</p>
+          </div>
+          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1 rounded-lg border border-rose-600 transition-colors">
+            Remove
+          </button>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error opening user wishlist:', err);
+    container.innerHTML = '<div class="col-span-3 text-center text-xs text-rose-500 py-8">Error loading wishlist.</div>';
+  }
+}
+
+function closeUserWishlistView() {
+  const modal = document.getElementById('modal-wishlist-view');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openWishlistAuthModal(game = null) {
+  if (game) selectedGameForWishlist = game;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = selectedGameForWishlist?.title || selectedGameForWishlist?.name || '';
+  
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'SAVE TO WISHLIST';
+
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function openLoginModal() {
+  selectedGameForWishlist = null;
+
+  const titleSpan = document.getElementById('wishlist-game-title');
+  if (titleSpan) titleSpan.innerText = 'Account Login';
+
+  document.getElementById('wishlist-email-input').value = '';
+  document.getElementById('wishlist-pin-input').value = '';
+
+  const saveBtn = document.getElementById('btn-save-wishlist');
+  if (saveBtn) saveBtn.innerText = 'LOGIN';
+
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  if (errorMsg) errorMsg.classList.add('hidden');
+
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWishlistAuthModal() {
+  const modal = document.getElementById('modal-wishlist-auth');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleWishlistSubmission() {
+  const emailInput = document.getElementById('wishlist-email-input').value.trim().toLowerCase();
+  const pinInput = document.getElementById('wishlist-pin-input').value.trim();
+  const errorMsg = document.getElementById('wishlist-error-msg');
+  const saveBtn = document.getElementById('btn-save-wishlist');
+
+  if (!emailInput || !/^\d{4}$/.test(pinInput)) {
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'PROCESSING...';
+
+  try {
+    const { data: user, error: loginError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('email', emailInput)
+      .eq('pin', pinInput)
+      .eq('account_type', 'gamer')
+      .single();
+
+    if (loginError || !user) {
+      if (errorMsg) {
+        errorMsg.innerText = 'Does Not Match, try again.';
+        errorMsg.classList.remove('hidden');
+      }
+      saveBtn.disabled = false;
+      saveBtn.innerText = selectedGameForWishlist ? 'SAVE TO WISHLIST' : 'LOGIN';
+      return;
+    }
+
+    setCurrentUser(user);
+
+    if (selectedGameForWishlist) {
+      await toggleGameWishlistStatus();
+      closeWishlistAuthModal();
+    } else {
+      closeWishlistAuthModal();
+    }
+
+  } catch (err) {
+    console.error('Wishlist/Login error:', err);
+    if (errorMsg) {
+      errorMsg.innerText = 'Does Not Match, try again.';
+      errorMsg.classList.remove('hidden');
+    }
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+/* ==================== ROM PRINTING & INVOICE LOGGING ==================== */
+
+async function logPrintToInvoice(game) {
+  if (!currentStoreEmail) return;
+  const gameTitle = game.title || game.name || 'Unknown Game';
+
+  try {
+    const { error } = await supabaseClient
+      .from('print_logs')
+      .insert([{ 
+        store_email: currentStoreEmail, 
+        game_title: gameTitle 
+      }]);
+      
+    if (error) console.error('Failed to write invoice log:', error);
+    else console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+  } catch (err) {
+    console.error('Error logging print to Supabase:', err);
+  }
+}
+
+async function prepareAndPrintGame(game) {
+  if (!game?.rom_url) {
+    handleHardwareError({
+      error_type: 'NO_ROM',
+      message: 'No ROM URL available for this game.'
+    });
+    return;
+  }
+
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) progressBar.style.width = '10%';
+
+  try {
+    console.log(`Sending flash request for ${game.title || game.name}...`);
+    if (progressBar) progressBar.style.width = '40%';
+
+    const response = await fetch('http://127.0.0.1:5001/flash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rom_url: game.rom_url })
+    });
+
+    if (progressBar) progressBar.style.width = '80%';
+    const result = await response.json();
+
+    if (response.ok && result.status === 'success') {
+      if (progressBar) progressBar.style.width = '100%';
+      console.log('Flash Output:', result.output);
+      
+      await logPrintToInvoice(game);
+      
+      setTimeout(() => {
+        navigateTo('screen-success');
+      }, 1000);
+
+    } else {
+      console.error('Flashing failed:', result.message || result.error);
+      handleHardwareError(result);
+    }
+
+  } catch (err) {
+    console.error('Network or hardware error during flash:', err);
+    handleHardwareError({
+      error_type: 'NO_BRIDGE',
+      message: 'Cannot connect to the local hardware bridge service.'
+    });
+  }
+}
+
+function handleHardwareError(errorData) {
+  const errorTitleEl = document.querySelector('#screen-error h1');
+  const errorMsgEl = document.querySelector('#screen-error p');
+
+  if (errorData.error_type === 'NO_HARDWARE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'HARDWARE UNPLUGGED';
+    if (errorMsgEl) errorMsgEl.innerText = 'The game flasher is not connected to the system. Please ensure the USB cable is plugged in.';
+  } else if (errorData.error_type === 'NO_CARTRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'NO CARTRIDGE DETECTED';
+    if (errorMsgEl) errorMsgEl.innerText = 'Please insert a blank cartridge firmly into the slot before printing.';
+  } else if (errorData.error_type === 'NO_BRIDGE') {
+    if (errorTitleEl) errorTitleEl.innerText = 'BRIDGE SERVICE DOWN';
+    if (errorMsgEl) errorMsgEl.innerText = 'Cannot connect to the local bridge background service on the Pi.';
+  } else {
+    if (errorTitleEl) errorTitleEl.innerText = 'ERROR: PRINTING FAILED';
+    if (errorMsgEl) errorMsgEl.innerText = errorData.message || 'Something went wrong while flashing. Please notify a team member.';
+  }
+
+  navigateTo('screen-error');
+}
+
+/* ==================== INITIALIZATION & EVENT LISTENERS ==================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkStoreSession(); 
+  loadGamesFromSupabase();
+  checkSavedUserSession();
+
+  // Allow "Enter" key to submit the login PIN form
+  document.getElementById('store-login-pin')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      handleStoreLogin();
+    }
+  });
+
+  document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
+  document.getElementById('search-input')?.addEventListener('input', applyFilters);
+
+  document.getElementById('screen-landing')?.addEventListener('click', () => {
+    navigateTo('screen-browse');
+  });
+
+  document.getElementById('btn-cancel')?.addEventListener('click', () => {
+    navigateTo('screen-browse');
+  });
+
+  document.getElementById('btn-error-reset')?.addEventListener('click', () => {
+    navigateTo('screen-landing');
+  });
+
+  document.getElementById('btn-user-wishlist')?.addEventListener('click', openUserWishlistView);
+  document.getElementById('btn-close-wishlist-view')?.addEventListener('click', closeUserWishlistView);
+
+  document.getElementById('btn-wishlist')?.addEventListener('click', toggleGameWishlistStatus);
+  document.getElementById('btn-cancel-wishlist')?.addEventListener('click', closeWishlistAuthModal);
+  document.getElementById('btn-save-wishlist')?.addEventListener('click', handleWishlistSubmission);
+
+  document.getElementById('btn-lightbox-close')?.addEventListener('click', closeLightbox);
+  document.getElementById('btn-lightbox-next')?.addEventListener('click', lightboxNext);
+  document.getElementById('btn-lightbox-prev')?.addEventListener('click', lightboxPrev);
+
+  document.getElementById('btn-login')?.addEventListener('click', () => {
+    if (currentUser) {
+      if (confirm(`Logged in as ${currentUser.email}. Do you want to log out?`)) {
+        logoutUser();
+      }
+    } else {
+      openLoginModal();
+    }
+  });
+
+  document.getElementById('btn-start-print')?.addEventListener('click', () => {
+    navigateTo('screen-insert-cartridge');
+  });
+
+  document.getElementById('btn-cartridge-done')?.addEventListener('click', async () => {
+    const cartTitle = document.getElementById('printing-cart-title');
+    if (cartTitle && selectedGameForWishlist) {
+      cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
+    }
+
+    navigateTo('screen-progress');
+
+    if (selectedGameForWishlist) {
+      await prepareAndPrintGame(selectedGameForWishlist);
+    } else {
+      handleHardwareError({
+        error_type: 'NO_GAME_SELECTED',
+        message: 'No game selected.'
+      });
+    }
+
+    logoutUser();
+  });
+
+  document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
+    navigateTo('modal-checkout');
+  });
+
+  /* ==================== PIN RESET LOGIC ==================== */
+  document.getElementById('btn-show-reset')?.addEventListener('click', () => {
+    document.getElementById('reset-pin-container').classList.remove('hidden');
+    document.getElementById('reset-pin-container').classList.add('flex');
+    document.getElementById('login-fields-container').classList.add('hidden');
+    document.getElementById('reset-msg').classList.add('hidden');
+  });
+
+  document.getElementById('btn-cancel-reset')?.addEventListener('click', () => {
+    document
