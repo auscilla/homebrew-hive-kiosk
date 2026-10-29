@@ -9,6 +9,12 @@ let selectedGameForWishlist = null;
 let currentCategory = 'all';
 let labelEmailSubmitted = false;
 let lastPrintLogId = null;
+let pendingCustomerEmail = null; // email typed before the print log id came back
+let emailSaveState = 'none';     // none | pending | saved | failed: drives the honest success copy
+let printLogSeq = 0;              // bumps per print and on return home, so a late reply never lands on the next cart
+const PRINT_LOG_WAIT_MS = 3000;   // longest the success screen waits on Supabase after a good flash
+let pinStepShownAt = 0;           // ignore the second half of a double tap on NEXT landing on the PIN step buttons
+const pinStepJustOpened = () => Date.now() - pinStepShownAt < 600;
 
 // Lightbox variables
 let currentLightboxImages = [];
@@ -97,6 +103,9 @@ function navigateTo(screenId) {
   if (screenId === 'screen-landing') {
     logoutUser();
     lastPrintLogId = null;
+    pendingCustomerEmail = null;
+    emailSaveState = 'none';
+    printLogSeq++;
   }
 
   document.querySelectorAll('.screen').forEach(s => {
@@ -581,56 +590,100 @@ async function handleWishlistSubmission() {
 
 /* ==================== ROM PRINTING & INVOICE LOGGING ==================== */
 
+const CUSTOMER_EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+function isValidCustomerEmail(email) {
+  return typeof email === 'string' && email.length <= 254 && CUSTOMER_EMAIL_RE.test(email);
+}
+
 function saveCustomerEmailToPrintLog(email) {
   try {
-    if (!lastPrintLogId) return;
-    const logId = lastPrintLogId;
+    if (!isValidCustomerEmail(email)) return;
     const customerEmail = email.toLowerCase();
+    if (!lastPrintLogId) {
+      if (!currentStoreEmail) return; // no store logged in: nothing to attach to
+      // The print log may still be on its way (slow network): attach the email when it arrives.
+      pendingCustomerEmail = customerEmail;
+      emailSaveState = 'pending';
+      return;
+    }
+    const logId = lastPrintLogId;
+    const seq = printLogSeq;
+    const settle = (state) => { if (seq === printLogSeq) emailSaveState = state; };
+    emailSaveState = 'pending';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
 
-    const updatePromise = supabaseClient
+    supabaseClient
       .from('print_logs')
       .update({ customer_email: customerEmail })
-      .eq('id', logId);
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('customer email save timed out')), 5000);
-    });
-
-    Promise.race([updatePromise, timeoutPromise])
+      .eq('id', logId)
+      .select('id')
+      .abortSignal(controller.signal)
       .then((result) => {
-        if (result && result.error) console.warn('Could not save customer email:', result.error);
-      })
-      .catch((err) => {
+        if (result && !result.error && Array.isArray(result.data) && result.data.length > 0) settle('saved');
+        else { settle('failed'); console.warn('Could not save customer email:', (result && result.error) || 'no row updated'); }
+      }, (err) => {
+        settle('failed');
         console.warn('Could not save customer email:', err);
-      });
+      })
+      .finally(() => clearTimeout(timer));
   } catch (err) {
     console.warn('Could not save customer email:', err);
   }
 }
 
+function renderLabelEmailSuccessCopy() {
+  // Only claim the email is saved when the update came back with a row; never wait for it.
+  const copy = emailSaveState === 'saved'
+    ? ['Email saved!', 'Get your free sticker at homebrewhive.com/sticker']
+    : (emailSaveState === 'pending' || emailSaveState === 'failed')
+      ? ['Thanks!', 'You can still get your free sticker at homebrewhive.com/sticker']
+      : ['Thanks!', 'Get your free game sticker at homebrewhive.com/sticker'];
+  const title = document.getElementById('label-email-success-title');
+  const msg = document.getElementById('label-email-success-msg');
+  if (title) title.textContent = copy[0];
+  if (msg) msg.textContent = copy[1];
+}
+
 async function logPrintToInvoice(game) {
   lastPrintLogId = null;
+  pendingCustomerEmail = null;
+  emailSaveState = 'none';
+  const seq = ++printLogSeq;
   if (!currentStoreEmail) return;
   const gameTitle = game.title || game.name || 'Unknown Game';
 
-  try {
-    const { data, error } = await supabaseClient
-      .from('print_logs')
-      .insert([{ 
-        store_email: currentStoreEmail, 
-        game_title: gameTitle 
-      }])
-      .select('id')
-      .single();
-      
-    if (error) console.error('Failed to write invoice log:', error);
-    else {
-      lastPrintLogId = data?.id ?? null;
-      console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+  // The invoice insert keeps running in the background; the success screen waits at most PRINT_LOG_WAIT_MS.
+  const insertDone = (async () => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('print_logs')
+        .insert([{ 
+          store_email: currentStoreEmail, 
+          game_title: gameTitle 
+        }])
+        .select('id')
+        .single();
+
+      if (error) console.error('Failed to write invoice log:', error);
+      else {
+        console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+        if (seq === printLogSeq) {
+          lastPrintLogId = data?.id ?? null;
+          if (lastPrintLogId && pendingCustomerEmail) {
+            const email = pendingCustomerEmail;
+            pendingCustomerEmail = null;
+            saveCustomerEmailToPrintLog(email);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error logging print to Supabase:', err);
     }
-  } catch (err) {
-    console.error('Error logging print to Supabase:', err);
-  }
+  })();
+
+  await Promise.race([insertDone, new Promise((resolve) => setTimeout(resolve, PRINT_LOG_WAIT_MS))]);
 }
 
 async function prepareAndPrintGame(game) {
@@ -734,6 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('label-email-success').classList.add('hidden');
     document.getElementById('label-email-input').value = '';
     document.getElementById('label-pin-input').value = '';
+    document.getElementById('label-email-error')?.classList.add('hidden');
   });
 
   document.getElementById('btn-cancel-label')?.addEventListener('click', () => {
@@ -742,28 +796,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-submit-label-email')?.addEventListener('click', () => {
     const emailInput = document.getElementById('label-email-input').value.trim();
+    const emailError = document.getElementById('label-email-error');
     if (!emailInput) return;
+    if (!isValidCustomerEmail(emailInput)) {
+      if (emailError) emailError.classList.remove('hidden');
+      return;
+    }
+    if (emailError) emailError.classList.add('hidden');
 
     saveCustomerEmailToPrintLog(emailInput);
 
     // Move to PIN Step
     document.getElementById('label-email-form').classList.add('hidden');
     document.getElementById('label-pin-form').classList.remove('hidden');
+    pinStepShownAt = Date.now();
+    // Put the on-screen keyboard away so it does not cover Skip / Back on the PIN step.
+    document.getElementById('keyboard-wrapper')?.classList.add('hidden');
+    const labelModal = document.getElementById('modal-label-email');
+    labelModal.style.overflowY = ''; labelModal.style.paddingBottom = ''; labelModal.scrollTop = 0;
+    document.activeElement?.blur?.();
   });
 
   // --- PIN FORM Handlers ---
   document.getElementById('btn-back-pin')?.addEventListener('click', () => {
+    if (pinStepJustOpened()) return;
     document.getElementById('label-pin-form').classList.add('hidden');
     document.getElementById('label-email-form').classList.remove('hidden');
   });
 
   document.getElementById('btn-skip-pin')?.addEventListener('click', () => {
+    if (pinStepJustOpened()) return;
     labelEmailSubmitted = true;
+    renderLabelEmailSuccessCopy();
     document.getElementById('label-pin-form').classList.add('hidden');
     document.getElementById('label-email-success').classList.remove('hidden');
   });
 
   document.getElementById('btn-submit-label-pin')?.addEventListener('click', async () => {
+    if (pinStepJustOpened()) return;
     const pinInput = document.getElementById('label-pin-input').value.trim();
     const emailInput = document.getElementById('label-email-input').value.trim();
     const errorMsg = document.getElementById('label-pin-error');
@@ -778,6 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // await supabaseClient.from('users').upsert({ email: emailInput, pin: pinInput, account_type: 'gamer' });
 
     labelEmailSubmitted = true;
+    renderLabelEmailSuccessCopy();
     document.getElementById('label-pin-form').classList.add('hidden');
     document.getElementById('label-email-success').classList.remove('hidden');
   });
@@ -806,6 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('label-email-form').classList.remove('hidden');
     document.getElementById('label-pin-form').classList.add('hidden');
     document.getElementById('label-email-success').classList.add('hidden');
+    document.getElementById('label-email-error')?.classList.add('hidden');
   });
 
   document.getElementById('btn-home-confirm-leave')?.addEventListener('click', () => {
@@ -953,14 +1025,14 @@ document.addEventListener('DOMContentLoaded', () => {
         "1 2 3 4 5 6 7 8 9 0 {bksp}",
         "q w e r t y u i o p",
         "a s d f g h j k l @ .com",
-        "{shift} z x c v b n m _ .",
+        "{shift} z x c v b n m _ - .",
         "{space}"
       ],
       shift: [
         "! @ # $ % ^ & * ( ) {bksp}",
         "Q W E R T Y U I O P",
         "A S D F G H J K L",
-        "{shift} Z X C V B N M",
+        "{shift} Z X C V B N M + -",
         "{space}"
       ]
     },
@@ -970,6 +1042,20 @@ document.addEventListener('DOMContentLoaded', () => {
       "{space}": "SPACE"
     }
   });
+
+  // Short screens (e.g. 800x480): the keyboard covers the email box and NEXT, so let the email modal
+  // scroll and lift NEXT just above the keyboard while it is open.
+  function liftLabelEmailForKeyboard(on) {
+    const modal = document.getElementById('modal-label-email');
+    if (!modal) return;
+    const kb = document.getElementById('keyboard-wrapper');
+    modal.style.overflowY = on ? 'auto' : '';
+    modal.style.paddingBottom = on && kb ? kb.offsetHeight + 'px' : '';
+    if (!on || !kb) { modal.scrollTop = 0; return; }
+    const next = document.getElementById('btn-submit-label-email');
+    const overlap = next ? next.getBoundingClientRect().bottom + 8 - kb.getBoundingClientRect().top : 0;
+    if (overlap > 0) modal.scrollTop += overlap;
+  }
 
   function onChange(input) {
     if (activeInput) {
@@ -1007,11 +1093,13 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePreviewBar(activeInput.value);
       
       document.getElementById("keyboard-wrapper").classList.remove("hidden");
+      if (activeInput.id === 'label-email-input') liftLabelEmailForKeyboard(true);
     });
   });
 
   document.getElementById("btn-close-keyboard").addEventListener("click", () => {
     document.getElementById("keyboard-wrapper").classList.add("hidden");
+    liftLabelEmailForKeyboard(false);
     if (activeInput) activeInput.blur();
   });
 
