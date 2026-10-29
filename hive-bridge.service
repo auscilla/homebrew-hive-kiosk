@@ -1,0 +1,16 @@
+[Unit]
+Description=Homebrew Hive Cartridge Flasher Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=uscillaaa
+WorkingDirectory=/home/uscillaaa
+ExecStart=/usr/bin/python3 /home/uscillaaa/bridge.py
+Restart=always
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
