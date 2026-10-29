@@ -16,7 +16,7 @@ def flash_cartridge():
         return jsonify({"status": "error", "error_type": "NO_ROM", "message": "No ROM URL provided."}), 400
 
     try:
-        print(f"Downloading ROM from: {rom_url}")
+        print(f"Downloading ROM from: {rom_url}", flush=True)
         response = requests.get(rom_url, timeout=15)
         response.raise_for_status()
 
@@ -24,7 +24,7 @@ def flash_cartridge():
         with open(rom_path, 'wb') as f:
             f.write(response.content)
 
-        print("ROM downloaded successfully. Starting hardware flash...")
+        print("ROM downloaded successfully. Starting hardware flash...", flush=True)
 
         home_dir = os.path.expanduser("~")
         run_py_path = None
@@ -46,9 +46,8 @@ def flash_cartridge():
             "--path", rom_path
         ]
 
-        print("Executing command: ", " ".join(flash_cmd))
+        print("Executing command: " + " ".join(flash_cmd), flush=True)
 
-        # 60-second timeout prevents the bridge from hanging indefinitely
         result = subprocess.run(
             flash_cmd,
             capture_output=True,
@@ -57,9 +56,9 @@ def flash_cartridge():
         )
 
         output = (result.stdout or "") + (result.stderr or "")
-        print(f"FlashGBX Output:\n{output}")
+        print(f"FlashGBX Output:\n{output}", flush=True)
 
-        # Check for disconnected hardware
+        # 1. Check for disconnected hardware
         if "No device found" in output or "Could not connect" in output:
             return jsonify({
                 "status": "error",
@@ -67,17 +66,30 @@ def flash_cartridge():
                 "message": "Cartridge flasher is unplugged or not detected."
             }), 500
 
-        # Check for empty slot or undetected flash chip
-        if ("Auto-detection failed" in output or 
-            "Generic ROM Cartridge (not rewritable or not auto-detectable)" in output or
-            "[ ROM ] 00 00 00 00 00 00 00 00" in output):
+        # 2. Check for missing cart, loose pins, or aborted auto-detection
+        no_cart_triggers = [
+            "Auto-detection failed",
+            "Generic ROM Cartridge",
+            "connection is unstable",
+            "clean the cartridge pins",
+            "[ ROM       ] 00 00 00 00 00 00 00 00",
+            "[ ROM       ] 00 00 00 00 00 FF 00 FF"
+        ]
+        if any(trigger in output for trigger in no_cart_triggers):
             return jsonify({
                 "status": "error",
                 "error_type": "NO_CARTRIDGE",
-                "message": "No cartridge detected. Please insert a blank cartridge firmly."
+                "message": "Cartridge connection unstable or not detected. Please re-insert firmly."
             }), 400
 
-        # Catch unexpected non-zero exit codes
+        # 3. Check for failed verification or unexpected non-zero exit
+        if "verification of written data failed" in output.lower():
+            return jsonify({
+                "status": "error",
+                "error_type": "FLASH_FAILED",
+                "message": "Cartridge write verification failed. Please try again."
+            }), 500
+
         if result.returncode != 0:
             return jsonify({
                 "status": "error",
@@ -85,18 +97,26 @@ def flash_cartridge():
                 "message": f"Flashing failed with exit code {result.returncode}."
             }), 500
 
-        print("Flashing complete!")
+        # 4. Strict safeguard: Confirm that writing actually occurred
+        if "will now be written to the flash cartridge" not in output and "Writing:" not in output:
+            return jsonify({
+                "status": "error",
+                "error_type": "FLASH_FAILED",
+                "message": "Flasher aborted before writing. Please reseat the cartridge."
+            }), 500
+
+        print("Flashing complete!", flush=True)
         return jsonify({"status": "success", "output": "Cartridge flashed successfully!"})
 
     except subprocess.TimeoutExpired:
-        print("Hardware flashing timed out after 60s")
+        print("Hardware flashing timed out after 60s", flush=True)
         return jsonify({
             "status": "error",
             "error_type": "TIMEOUT",
             "message": "Hardware flasher timed out. Please reseat and try again."
         }), 504
     except Exception as e:
-        print(f"Hardware/Download Error: {e}")
+        print(f"Hardware/Download Error: {e}", flush=True)
         return jsonify({
             "status": "error",
             "error_type": "HARDWARE_ERROR",
