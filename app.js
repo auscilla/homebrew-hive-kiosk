@@ -8,6 +8,7 @@ let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store sess
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
 let labelEmailSubmitted = false;
+let lastPrintLogId = null;
 
 // Lightbox variables
 let currentLightboxImages = [];
@@ -95,6 +96,7 @@ async function loadGamesFromSupabase() {
 function navigateTo(screenId) {
   if (screenId === 'screen-landing') {
     logoutUser();
+    lastPrintLogId = null;
   }
 
   document.querySelectorAll('.screen').forEach(s => {
@@ -579,20 +581,53 @@ async function handleWishlistSubmission() {
 
 /* ==================== ROM PRINTING & INVOICE LOGGING ==================== */
 
+function saveCustomerEmailToPrintLog(email) {
+  try {
+    if (!lastPrintLogId) return;
+    const logId = lastPrintLogId;
+    const customerEmail = email.toLowerCase();
+
+    const updatePromise = supabaseClient
+      .from('print_logs')
+      .update({ customer_email: customerEmail })
+      .eq('id', logId);
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('customer email save timed out')), 5000);
+    });
+
+    Promise.race([updatePromise, timeoutPromise])
+      .then((result) => {
+        if (result && result.error) console.warn('Could not save customer email:', result.error);
+      })
+      .catch((err) => {
+        console.warn('Could not save customer email:', err);
+      });
+  } catch (err) {
+    console.warn('Could not save customer email:', err);
+  }
+}
+
 async function logPrintToInvoice(game) {
+  lastPrintLogId = null;
   if (!currentStoreEmail) return;
   const gameTitle = game.title || game.name || 'Unknown Game';
 
   try {
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('print_logs')
       .insert([{ 
         store_email: currentStoreEmail, 
         game_title: gameTitle 
-      }]);
+      }])
+      .select('id')
+      .single();
       
     if (error) console.error('Failed to write invoice log:', error);
-    else console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+    else {
+      lastPrintLogId = data?.id ?? null;
+      console.log(`Invoiced print of ${gameTitle} to ${currentStoreEmail}`);
+    }
   } catch (err) {
     console.error('Error logging print to Supabase:', err);
   }
@@ -708,6 +743,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-submit-label-email')?.addEventListener('click', () => {
     const emailInput = document.getElementById('label-email-input').value.trim();
     if (!emailInput) return;
+
+    saveCustomerEmailToPrintLog(emailInput);
 
     // Move to PIN Step
     document.getElementById('label-email-form').classList.add('hidden');
