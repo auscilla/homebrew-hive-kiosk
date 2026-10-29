@@ -634,7 +634,6 @@ function saveCustomerEmailToPrintLog(email) {
 }
 
 function renderLabelEmailSuccessCopy() {
-  // Only claim the email is saved when the update came back with a row; never wait for it.
   const copy = emailSaveState === 'saved'
     ? ['Email saved!', 'Get your free sticker at homebrewhive.com/sticker']
     : (emailSaveState === 'pending' || emailSaveState === 'failed')
@@ -654,7 +653,6 @@ async function logPrintToInvoice(game) {
   if (!currentStoreEmail) return;
   const gameTitle = game.title || game.name || 'Unknown Game';
 
-  // The invoice insert keeps running in the background; the success screen waits at most PRINT_LOG_WAIT_MS.
   const insertDone = (async () => {
     try {
       const { data, error } = await supabaseClient
@@ -699,6 +697,10 @@ async function prepareAndPrintGame(game) {
   const progressBar = document.getElementById('progress-bar');
   if (progressBar) progressBar.style.width = '10%';
 
+  // 65-second client timeout: guarantees the UI never hangs indefinitely
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 65000);
+
   try {
     console.log(`Sending flash request for ${game.title || game.name}...`);
     if (progressBar) progressBar.style.width = '40%';
@@ -706,8 +708,11 @@ async function prepareAndPrintGame(game) {
     const response = await fetch('http://127.0.0.1:5001/flash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rom_url: game.rom_url })
+      body: JSON.stringify({ rom_url: game.rom_url }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (progressBar) progressBar.style.width = '80%';
     const result = await response.json();
@@ -728,11 +733,20 @@ async function prepareAndPrintGame(game) {
     }
 
   } catch (err) {
+    clearTimeout(timeoutId);
     console.error('Network or hardware error during flash:', err);
-    handleHardwareError({
-      error_type: 'NO_BRIDGE',
-      message: 'Cannot connect to the local hardware bridge service.'
-    });
+
+    if (err.name === 'AbortError') {
+      handleHardwareError({
+        error_type: 'TIMEOUT',
+        message: 'Flashing took too long and timed out. Please reseat your cartridge and try again.'
+      });
+    } else {
+      handleHardwareError({
+        error_type: 'NO_BRIDGE',
+        message: 'Cannot connect to the local hardware bridge service.'
+      });
+    }
   }
 }
 
@@ -746,6 +760,9 @@ function handleHardwareError(errorData) {
   } else if (errorData.error_type === 'NO_CARTRIDGE') {
     if (errorTitleEl) errorTitleEl.innerText = 'NO CARTRIDGE DETECTED';
     if (errorMsgEl) errorMsgEl.innerText = 'Please insert a blank cartridge firmly into the slot before printing.';
+  } else if (errorData.error_type === 'TIMEOUT') {
+    if (errorTitleEl) errorTitleEl.innerText = 'FLASH TIMED OUT';
+    if (errorMsgEl) errorMsgEl.innerText = errorData.message || 'The flasher timed out. Please remove and re-insert the cartridge, then try again.';
   } else if (errorData.error_type === 'NO_BRIDGE') {
     if (errorTitleEl) errorTitleEl.innerText = 'BRIDGE SERVICE DOWN';
     if (errorMsgEl) errorMsgEl.innerText = 'Cannot connect to the local bridge background service on the Pi.';
@@ -843,9 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (errorMsg) errorMsg.classList.add('hidden');
-
-    // Optional: Add your Supabase upsert logic here to save the email/PIN as a Gamer
-    // await supabaseClient.from('users').upsert({ email: emailInput, pin: pinInput, account_type: 'gamer' });
 
     labelEmailSubmitted = true;
     renderLabelEmailSuccessCopy();
@@ -1043,8 +1057,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Short screens (e.g. 800x480): the keyboard covers the email box and NEXT, so let the email modal
-  // scroll and lift NEXT just above the keyboard while it is open.
   function liftLabelEmailForKeyboard(on) {
     const modal = document.getElementById('modal-label-email');
     if (!modal) return;
