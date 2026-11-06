@@ -4,7 +4,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let GAMES_DATA = [];
 let currentUser = null; // Gamer session
-let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
+const DEFAULT_STORE_EMAIL = 'aaron@uscilla.com';
+let currentStoreEmail = localStorage.getItem('kiosk_store_email') || DEFAULT_STORE_EMAIL;
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
 let labelEmailSubmitted = false;
@@ -347,21 +348,9 @@ async function handleStoreLogin() {
 }
 
 function checkStoreSession() {
-  if (currentStoreEmail) {
-    document.getElementById('screen-store-login').classList.add('hidden');
-    document.getElementById('screen-store-login').classList.remove('active');
-    navigateTo('screen-landing');
-  } else {
-    document.querySelectorAll('.screen').forEach(s => {
-      s.classList.add('hidden');
-      s.classList.remove('active');
-    });
-    const storeLogin = document.getElementById('screen-store-login');
-    if (storeLogin) {
-      storeLogin.classList.remove('hidden');
-      storeLogin.classList.add('active');
-    }
-  }
+  document.getElementById('screen-store-login')?.classList.add('hidden');
+  document.getElementById('screen-store-login')?.classList.remove('active');
+  navigateTo('screen-landing');
 }
 
 function setCurrentUser(user) {
