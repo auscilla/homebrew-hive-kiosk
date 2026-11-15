@@ -250,3 +250,18 @@ img {
   letter-spacing: 0.08em;
   white-space: nowrap;
 }
+
+/* ==================== INSERT CARTRIDGE: TERMS AGREEMENT ==================== */
+/* Until the terms box is ticked, only DONE is disabled and slightly dimmed (GO BACK is always
+   enabled). Ticking removes .terms-pending (and the disabled attribute), so DONE returns to exactly its normal look. */
+#cartridge-actions.terms-pending > #btn-cartridge-done {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
+.terms-checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: #10b981; /* emerald-500, matches DONE */
+  cursor: pointer;
+}
