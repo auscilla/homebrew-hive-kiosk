@@ -95,16 +95,13 @@
       <div class="flex items-center bg-zinc-950 px-4 py-2 rounded-lg font-bold text-xs tracking-wider text-zinc-300 border border-zinc-800 focus-within:border-amber-400">
         <input type="text" id="search-input" placeholder="SEARCH GAMES..." autocomplete="new-password" class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider" />
       </div>
-      <div class="flex items-center gap-3">
-        <span id="page-indicator" class="text-[10px] font-bold text-amber-400 tracking-wider whitespace-nowrap" aria-live="polite"></span>
-        <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
-          <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
-          <span>HOME</span>
-        </button>
-      </div>
+      <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
+        <img src="assets/brand/bee-flying.png" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
+        <span>HOME</span>
+      </button>
     </div>
 
-    <div id="browse-filters" class="flex gap-2 mb-4 overflow-x-auto pb-1">
+    <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
       <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 rounded-full bg-zinc-100 text-black font-bold text-xs">All Games</button>
       <button onclick="filterCategory('New')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">New</button>
       <button onclick="filterCategory('Classic')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Classic</button>
@@ -112,16 +109,13 @@
       <button onclick="filterCategory('Action')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Action</button>
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
-    <!-- Paged grid: 5 rows per page, Previous / Next arrows on the sides (no scrolling) -->
-    <div id="browse-pager" class="flex flex-1 min-h-0 items-stretch gap-2">
-      <button id="btn-page-prev" type="button" class="page-arrow" aria-label="Previous page">
-        <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor" aria-hidden="true"><path d="M15.5 3.5 6.5 12l9 8.5z"/></svg>
-      </button>
-      <div id="game-grid" class="paged grid grid-cols-3 flex-1 min-w-0 min-h-0"></div>
-      <button id="btn-page-next" type="button" class="page-arrow" aria-label="Next page">
-        <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor" aria-hidden="true"><path d="M8.5 3.5 17.5 12l-9 8.5z"/></svg>
-      </button>
-    </div>
+    <div id="game-grid" class="grid grid-cols-3 gap-5 overflow-y-auto flex-1 pr-2 pb-4"></div>
+    <!-- Page bar: moved to the bottom of the grid (after the 5th row) by renderPage() in app.js -->
+    <nav id="page-bar" class="page-bar is-hidden" aria-label="Game pages">
+      <button id="btn-page-prev" type="button" class="page-btn" aria-label="Previous page">&#9664; PREV</button>
+      <span id="page-indicator" class="page-label" aria-live="polite"></span>
+      <button id="btn-page-next" type="button" class="page-btn" aria-label="Next page">NEXT &#9654;</button>
+    </nav>
   </div>
 
   <!-- ==================== WISHLIST MANAGEMENT DRAWER/MODAL ==================== -->

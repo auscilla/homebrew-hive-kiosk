@@ -7,7 +7,9 @@ let currentUser = null; // Gamer session
 let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
-const ROWS_PER_PAGE = 5; // browse screen shows exactly 5 rows per page
+const ROWS_PER_PAGE = 5;     // 5 rows of big carts per page
+const COLUMNS_PER_PAGE = 3;  // matches grid-cols-3 on #game-grid
+const GAMES_PER_PAGE = ROWS_PER_PAGE * COLUMNS_PER_PAGE;
 let filteredGames = [];
 let currentPage = 0;
 let labelEmailSubmitted = false;
@@ -121,10 +123,11 @@ function navigateTo(screenId) {
     target.classList.add('active');
   }
 
-  // New customer starts on page 1; re-render when the grid becomes visible so the
-  // page size uses the real column count.
-  if (screenId === 'screen-landing') currentPage = 0;
-  if (screenId === 'screen-browse') renderPage();
+  // HOME (back to landing) means the next customer starts on page 1.
+  if (screenId === 'screen-landing') {
+    currentPage = 0;
+    renderPage();
+  }
 }
 
 function renderGames(gamesList) {
@@ -175,56 +178,39 @@ function applyFilters() {
 }
 
 // ==================== BROWSE PAGINATION ====================
-function gridColumnCount() {
-  const grid = document.getElementById('game-grid');
-  if (!grid) return 3;
-  const value = getComputedStyle(grid).gridTemplateColumns || '';
-  const repeat = value.match(/^repeat\((\d+)/);
-  if (repeat) return parseInt(repeat[1], 10);
-  const tracks = value.split(/\s+(?![^(]*\))/).filter(t => t && t !== 'none');
-  return tracks.length || 3;
-}
-
-function gamesPerPage() {
-  return ROWS_PER_PAGE * gridColumnCount();
-}
-
+// The grid keeps the original big cart tiles and still scrolls inside itself;
+// each page holds 5 rows x 3 carts, with the page bar after the last row.
 function pageCount() {
-  return Math.max(1, Math.ceil(filteredGames.length / gamesPerPage()));
+  return Math.max(1, Math.ceil(filteredGames.length / GAMES_PER_PAGE));
 }
 
 function renderPage() {
-  const perPage = gamesPerPage();
+  const grid = document.getElementById('game-grid');
+  const bar = document.getElementById('page-bar');
   const pages = pageCount();
   currentPage = Math.min(Math.max(currentPage, 0), pages - 1);
-  const start = currentPage * perPage;
-  renderGames(filteredGames.slice(start, start + perPage));
-  updatePager(pages);
+  const start = currentPage * GAMES_PER_PAGE;
+  renderGames(filteredGames.slice(start, start + GAMES_PER_PAGE));
+  if (grid) grid.scrollTop = 0; // every page starts at the top
+  if (!bar) return;
+
+  // renderGames() replaces the grid's contents, so re-attach the bar as the
+  // last grid item (it spans all columns via .page-bar in style.css).
+  if (grid) grid.appendChild(bar);
+  const prev = document.getElementById('btn-page-prev');
+  const next = document.getElementById('btn-page-next');
+  const label = document.getElementById('page-indicator');
+  bar.classList.toggle('is-hidden', pages <= 1);
+  if (prev) prev.disabled = currentPage === 0;
+  if (next) next.disabled = currentPage >= pages - 1;
+  if (label) label.innerText = `PAGE ${currentPage + 1} / ${pages}`;
 }
 
 function changePage(delta) {
-  const next = currentPage + delta;
-  if (next < 0 || next >= pageCount()) return;
-  currentPage = next;
+  const target = currentPage + delta;
+  if (target < 0 || target >= pageCount()) return;
+  currentPage = target;
   renderPage();
-}
-
-function updatePager(pages) {
-  const prev = document.getElementById('btn-page-prev');
-  const next = document.getElementById('btn-page-next');
-  const indicator = document.getElementById('page-indicator');
-  const single = pages <= 1;
-  if (prev) {
-    prev.disabled = currentPage === 0;
-    prev.classList.toggle('is-hidden', single);
-  }
-  if (next) {
-    next.disabled = currentPage >= pages - 1;
-    next.classList.toggle('is-hidden', single);
-  }
-  if (indicator) {
-    indicator.innerText = filteredGames.length === 0 ? 'NO GAMES FOUND' : `PAGE ${currentPage + 1} / ${pages}`;
-  }
 }
 
 function openCheckout(gameId) {
@@ -832,7 +818,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
   document.getElementById('btn-page-prev')?.addEventListener('click', () => changePage(-1));
   document.getElementById('btn-page-next')?.addEventListener('click', () => changePage(1));
-  window.addEventListener('resize', () => renderPage());
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
