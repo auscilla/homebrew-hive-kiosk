@@ -207,3 +207,46 @@ img {
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
   background: #f59e0b;
 }
+
+/* ==================== BROWSE PAGE BAR (Previous / PAGE x / y / Next) ==================== */
+/* Sits after the 5th row of carts inside #game-grid. It is a <nav>, not a <div>, so the
+   existing `#game-grid > div` cart rules never apply to it; the cart tiles are unchanged. */
+.page-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 0 4px;
+}
+.page-bar.is-hidden { display: none; }
+.page-btn {
+  min-width: 150px;
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: #fbbf24;
+  color: #09090b;
+  border: 2px solid #f59e0b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.page-btn:active:not(:disabled) { background: #f59e0b; transform: translateY(1px); }
+.page-btn:disabled {
+  background: #27272a;
+  color: #52525b;
+  border-color: #3f3f46;
+  cursor: default;
+}
+.page-label {
+  min-width: 130px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
