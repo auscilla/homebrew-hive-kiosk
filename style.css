@@ -207,3 +207,88 @@ img {
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
   background: #f59e0b;
 }
+
+/* ==================== PAGED BROWSE GRID (5 rows per page) ==================== */
+/* The browse screen shows exactly 5 rows per page and pages with the side arrows
+   instead of scrolling. Cards become compact tiles (cart thumbnail + title +
+   short description) so 5 rows fit on the 800x480 kiosk screen. */
+#game-grid.paged {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
+  gap: 0.5rem 0.75rem !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  touch-action: manipulation !important;
+}
+
+#game-grid.paged > div {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.6rem;
+  padding: 0.3rem 0.5rem !important;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#game-grid.paged > div > img {
+  width: auto !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  flex: none !important;
+  margin: 0 !important;
+}
+
+#game-grid.paged > div > div:nth-child(2) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  margin-top: 0 !important;
+  justify-content: center !important;
+}
+
+#game-grid.paged > div > div:nth-child(2) > *:first-child {
+  font-size: 10px !important;
+  margin-bottom: 5px !important;
+}
+
+#game-grid.paged > div > div:nth-child(2) p {
+  -webkit-line-clamp: 2 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Big, touch-friendly page arrows */
+.page-arrow {
+  flex: none;
+  width: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: #27272a;
+  border: 2px solid #3f3f46;
+  color: #fbbf24;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+}
+.page-arrow:active:not(:disabled) {
+  background: #f59e0b;
+  color: #000;
+}
+.page-arrow:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+.page-arrow.is-hidden {
+  visibility: hidden;
+}
+
+/* Short kiosk screens (800x480): tighten the browse chrome so 5 rows fit */
+@media (max-height: 600px) {
+  #screen-browse { padding: 0.75rem !important; }
+  #screen-browse > div:first-child { margin-bottom: 0.5rem !important; padding: 0.5rem 0.75rem !important; }
+  #browse-filters { margin-bottom: 0.5rem !important; }
+}

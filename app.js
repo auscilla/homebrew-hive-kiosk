@@ -7,6 +7,9 @@ let currentUser = null; // Gamer session
 let currentStoreEmail = localStorage.getItem('kiosk_store_email'); // Store session
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
+const ROWS_PER_PAGE = 5; // browse screen shows exactly 5 rows per page
+let filteredGames = [];
+let currentPage = 0;
 let labelEmailSubmitted = false;
 let lastPrintLogId = null;
 let pendingCustomerEmail = null; // email typed before the print log id came back
@@ -96,7 +99,7 @@ async function loadGamesFromSupabase() {
     };
   }).sort((a, b) => a.sort_order - b.sort_order);
 
-  renderGames(GAMES_DATA);
+  applyFilters();
 }
 
 function navigateTo(screenId) {
@@ -117,6 +120,11 @@ function navigateTo(screenId) {
     target.classList.remove('hidden');
     target.classList.add('active');
   }
+
+  // New customer starts on page 1; re-render when the grid becomes visible so the
+  // page size uses the real column count.
+  if (screenId === 'screen-landing') currentPage = 0;
+  if (screenId === 'screen-browse') renderPage();
 }
 
 function renderGames(gamesList) {
@@ -160,7 +168,63 @@ function applyFilters() {
     return matchesCategory && matchesSearch;
   });
 
-  renderGames(filtered);
+  // A new search or category always starts again at page 1.
+  filteredGames = filtered;
+  currentPage = 0;
+  renderPage();
+}
+
+// ==================== BROWSE PAGINATION ====================
+function gridColumnCount() {
+  const grid = document.getElementById('game-grid');
+  if (!grid) return 3;
+  const value = getComputedStyle(grid).gridTemplateColumns || '';
+  const repeat = value.match(/^repeat\((\d+)/);
+  if (repeat) return parseInt(repeat[1], 10);
+  const tracks = value.split(/\s+(?![^(]*\))/).filter(t => t && t !== 'none');
+  return tracks.length || 3;
+}
+
+function gamesPerPage() {
+  return ROWS_PER_PAGE * gridColumnCount();
+}
+
+function pageCount() {
+  return Math.max(1, Math.ceil(filteredGames.length / gamesPerPage()));
+}
+
+function renderPage() {
+  const perPage = gamesPerPage();
+  const pages = pageCount();
+  currentPage = Math.min(Math.max(currentPage, 0), pages - 1);
+  const start = currentPage * perPage;
+  renderGames(filteredGames.slice(start, start + perPage));
+  updatePager(pages);
+}
+
+function changePage(delta) {
+  const next = currentPage + delta;
+  if (next < 0 || next >= pageCount()) return;
+  currentPage = next;
+  renderPage();
+}
+
+function updatePager(pages) {
+  const prev = document.getElementById('btn-page-prev');
+  const next = document.getElementById('btn-page-next');
+  const indicator = document.getElementById('page-indicator');
+  const single = pages <= 1;
+  if (prev) {
+    prev.disabled = currentPage === 0;
+    prev.classList.toggle('is-hidden', single);
+  }
+  if (next) {
+    next.disabled = currentPage >= pages - 1;
+    next.classList.toggle('is-hidden', single);
+  }
+  if (indicator) {
+    indicator.innerText = filteredGames.length === 0 ? 'NO GAMES FOUND' : `PAGE ${currentPage + 1} / ${pages}`;
+  }
 }
 
 function openCheckout(gameId) {
@@ -766,6 +830,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
+  document.getElementById('btn-page-prev')?.addEventListener('click', () => changePage(-1));
+  document.getElementById('btn-page-next')?.addEventListener('click', () => changePage(1));
+  window.addEventListener('resize', () => renderPage());
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
