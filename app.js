@@ -636,10 +636,8 @@ async function handleWishlistSubmission() {
 function updateCartridgeTermsState() {
   const box = document.getElementById('terms-agree');
   const agreed = !!(box && box.checked);
-  ['btn-cartridge-done', 'btn-cartridge-back'].forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.disabled = !agreed;
-  });
+  const done = document.getElementById('btn-cartridge-done');
+  if (done) done.disabled = !agreed; // only DONE is gated; GO BACK is always enabled
   document.getElementById('cartridge-actions')?.classList.toggle('terms-pending', !agreed);
 }
 
@@ -1041,7 +1039,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
-    if (!document.getElementById('terms-agree')?.checked) return; // terms not agreed: GO BACK is disabled
     navigateTo('modal-checkout');
   });
 

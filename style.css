@@ -252,9 +252,9 @@ img {
 }
 
 /* ==================== INSERT CARTRIDGE: TERMS AGREEMENT ==================== */
-/* Until the terms box is ticked, DONE and GO BACK are disabled and slightly dimmed. Ticking
-   removes .terms-pending (and the disabled attributes), so both return to exactly their normal look. */
-#cartridge-actions.terms-pending > button {
+/* Until the terms box is ticked, only DONE is disabled and slightly dimmed (GO BACK is always
+   enabled). Ticking removes .terms-pending (and the disabled attribute), so DONE returns to exactly its normal look. */
+#cartridge-actions.terms-pending > #btn-cartridge-done {
   opacity: 0.45;
   filter: grayscale(0.4);
   cursor: not-allowed;
