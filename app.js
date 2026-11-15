@@ -1178,8 +1178,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.querySelectorAll("input").forEach(input => {
+  // Only text-entry fields get the on-screen keyboard. Checkboxes and every other input type
+  // (and anything marked data-no-keyboard) must never open it.
+  const KEYBOARD_INPUT_TYPES = ['text', 'email', 'password', 'search', 'number'];
+  document.querySelectorAll("input, textarea").forEach(input => {
     if (input.id === "keyboard-preview-bar") return;
+    if (input.hasAttribute('data-no-keyboard')) return;
+    if (input.tagName === 'INPUT' && !KEYBOARD_INPUT_TYPES.includes((input.type || 'text').toLowerCase())) return;
 
     input.addEventListener("input", (e) => {
       if (activeInput && activeInput.id === e.target.id) {
