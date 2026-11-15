@@ -8,6 +8,11 @@ const DEFAULT_STORE_EMAIL = 'aaron@uscilla.com';
 let currentStoreEmail = localStorage.getItem('kiosk_store_email') || DEFAULT_STORE_EMAIL;
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
+const ROWS_PER_PAGE = 5;     // 5 rows of big carts per page
+const COLUMNS_PER_PAGE = 3;  // matches grid-cols-3 on #game-grid
+const GAMES_PER_PAGE = ROWS_PER_PAGE * COLUMNS_PER_PAGE;
+let filteredGames = [];
+let currentPage = 0;
 let labelEmailSubmitted = false;
 let lastPrintLogId = null;
 let pendingCustomerEmail = null; // email typed before the print log id came back
@@ -97,7 +102,7 @@ async function loadGamesFromSupabase() {
     };
   }).sort((a, b) => a.sort_order - b.sort_order);
 
-  renderGames(GAMES_DATA);
+  applyFilters();
 }
 
 function navigateTo(screenId) {
@@ -117,6 +122,12 @@ function navigateTo(screenId) {
   if (target) {
     target.classList.remove('hidden');
     target.classList.add('active');
+  }
+
+  // HOME (back to landing) means the next customer starts on page 1.
+  if (screenId === 'screen-landing') {
+    currentPage = 0;
+    renderPage();
   }
 }
 
@@ -161,7 +172,46 @@ function applyFilters() {
     return matchesCategory && matchesSearch;
   });
 
-  renderGames(filtered);
+  // A new search or category always starts again at page 1.
+  filteredGames = filtered;
+  currentPage = 0;
+  renderPage();
+}
+
+// ==================== BROWSE PAGINATION ====================
+// The grid keeps the original big cart tiles and still scrolls inside itself;
+// each page holds 5 rows x 3 carts, with the page bar after the last row.
+function pageCount() {
+  return Math.max(1, Math.ceil(filteredGames.length / GAMES_PER_PAGE));
+}
+
+function renderPage() {
+  const grid = document.getElementById('game-grid');
+  const bar = document.getElementById('page-bar');
+  const pages = pageCount();
+  currentPage = Math.min(Math.max(currentPage, 0), pages - 1);
+  const start = currentPage * GAMES_PER_PAGE;
+  renderGames(filteredGames.slice(start, start + GAMES_PER_PAGE));
+  if (grid) grid.scrollTop = 0; // every page starts at the top
+  if (!bar) return;
+
+  // renderGames() replaces the grid's contents, so re-attach the bar as the
+  // last grid item (it spans all columns via .page-bar in style.css).
+  if (grid) grid.appendChild(bar);
+  const prev = document.getElementById('btn-page-prev');
+  const next = document.getElementById('btn-page-next');
+  const label = document.getElementById('page-indicator');
+  bar.classList.toggle('is-hidden', pages <= 1);
+  if (prev) prev.disabled = currentPage === 0;
+  if (next) next.disabled = currentPage >= pages - 1;
+  if (label) label.innerText = `PAGE ${currentPage + 1} / ${pages}`;
+}
+
+function changePage(delta) {
+  const target = currentPage + delta;
+  if (target < 0 || target >= pageCount()) return;
+  currentPage = target;
+  renderPage();
 }
 
 function openCheckout(gameId) {
@@ -772,6 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
+  document.getElementById('btn-page-prev')?.addEventListener('click', () => changePage(-1));
+  document.getElementById('btn-page-next')?.addEventListener('click', () => changePage(1));
 
   document.getElementById('screen-landing')?.addEventListener('click', () => {
     navigateTo('screen-browse');
