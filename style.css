@@ -18,14 +18,14 @@
 /* Background Pattern for Progress/Error screens */
 .bg-circuit {
   background-color: #09090b;
-  background-image: url('assets/brand/bg-circuit-pattern.png');
+  background-image: url('assets/brand/bg-circuit-pattern.png?v=20');
   background-size: cover;
   background-position: center;
 }
 
 /* Honey Fill for Progress Bar */
 .bg-honey {
-  background-image: url('assets/brand/honey-bubbles.png');
+  background-image: url('assets/brand/honey-bubbles.png?v=20');
   background-size: cover;
   background-position: left center;
 }

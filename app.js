@@ -2,6 +2,13 @@ const SUPABASE_URL = 'https://tskbfytfjsiavwysecuk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Cache-busting: local images built in JS carry the same ?v= token as index.html's images.
+const ASSET_VERSION = '20';
+// The version this app.js was loaded as (from its own <script src="app.js?v=...">).
+const RUNNING_APP_VERSION = (() => {
+  try { return new URL(document.currentScript.src).searchParams.get('v'); } catch (e) { return null; }
+})();
+
 let GAMES_DATA = [];
 let currentUser = null; // Gamer session
 const DEFAULT_STORE_EMAIL = 'aaron@uscilla.com';
@@ -88,9 +95,9 @@ async function loadGamesFromSupabase() {
 
     if (gallery.length === 0) {
       gallery = [
-        'assets/brand/snap.png',
-        'assets/brand/snap.png',
-        'assets/brand/snap.png'
+        `assets/brand/snap.png?v=${ASSET_VERSION}`,
+        `assets/brand/snap.png?v=${ASSET_VERSION}`,
+        `assets/brand/snap.png?v=${ASSET_VERSION}`
       ];
     }
 
@@ -863,7 +870,47 @@ function handleHardwareError(errorData) {
 
 /* ==================== INITIALIZATION & EVENT LISTENERS ==================== */
 
+/* ==================== STARTUP UPDATE CHECK ==================== */
+// The kiosk has no keyboard, so a stale cached page can't be refreshed by hand. At startup
+// only, fetch index.html fresh; if it references a different app.js?v= than the one running,
+// reload ONCE. A sessionStorage flag means it can never reload twice in one browser session,
+// it is skipped once anyone touches the screen or leaves the landing screen, and any error
+// (offline, timeout, parse) means do nothing.
+const UPDATE_RELOAD_FLAG = 'hive_update_reload_done';
+
+function startupUpdateCheck() {
+  try {
+    if (!RUNNING_APP_VERSION) return;
+    if (sessionStorage.getItem(UPDATE_RELOAD_FLAG)) return;
+    let touched = false;
+    const markTouched = () => { touched = true; };
+    window.addEventListener('pointerdown', markTouched, { once: true, capture: true });
+    window.addEventListener('keydown', markTouched, { once: true, capture: true });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const url = new URL('index.html', location.href);
+    url.searchParams.set('cb', Date.now());
+    fetch(url.toString(), { cache: 'no-store', signal: controller.signal })
+      .then((res) => (res.ok ? res.text() : ''))
+      .then((html) => {
+        const match = html && html.match(/app\.js\?v=([\w.-]+)/);
+        if (!match || match[1] === RUNNING_APP_VERSION) return;
+        const screen = document.querySelector('.screen.active');
+        const idle = !screen || screen.id === 'screen-landing' || screen.id === 'screen-store-login';
+        if (touched || !idle || sessionStorage.getItem(UPDATE_RELOAD_FLAG)) return;
+        sessionStorage.setItem(UPDATE_RELOAD_FLAG, match[1]);
+        location.reload();
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+  } catch (e) {
+    // never let the update check affect the kiosk
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  startupUpdateCheck();
   checkStoreSession(); 
   loadGamesFromSupabase();
   checkSavedUserSession();
