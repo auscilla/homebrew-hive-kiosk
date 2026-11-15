@@ -8,6 +8,7 @@ const DEFAULT_STORE_EMAIL = 'aaron@uscilla.com';
 let currentStoreEmail = localStorage.getItem('kiosk_store_email') || DEFAULT_STORE_EMAIL;
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
+const TERMS_VERSION = '2026-11-15'; // bump when the Homebrew Hive Terms text changes
 const ROWS_PER_PAGE = 5;     // 5 rows of big carts per page
 const COLUMNS_PER_PAGE = 3;  // matches grid-cols-3 on #game-grid
 const GAMES_PER_PAGE = ROWS_PER_PAGE * COLUMNS_PER_PAGE;
@@ -129,6 +130,9 @@ function navigateTo(screenId) {
     currentPage = 0;
     renderPage();
   }
+
+  // Every time the insert-cartridge screen opens, the terms box starts unticked.
+  if (screenId === 'screen-insert-cartridge') resetTermsAgreement();
 }
 
 function renderGames(gamesList) {
@@ -627,6 +631,52 @@ async function handleWishlistSubmission() {
   }
 }
 
+/* ==================== TERMS AGREEMENT (INSERT CARTRIDGE SCREEN) ==================== */
+
+function updateCartridgeTermsState() {
+  const box = document.getElementById('terms-agree');
+  const agreed = !!(box && box.checked);
+  ['btn-cartridge-done', 'btn-cartridge-back'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !agreed;
+  });
+  document.getElementById('cartridge-actions')?.classList.toggle('terms-pending', !agreed);
+}
+
+function resetTermsAgreement() {
+  const box = document.getElementById('terms-agree');
+  if (box) box.checked = false;
+  updateCartridgeTermsState();
+}
+
+// Records the agreement in public.terms_agreements. Fire-and-forget: printing never
+// waits for or depends on this insert; failures are only logged. No .select() here,
+// because the table has an insert-only policy (no SELECT), so returning the row would fail.
+function recordTermsAgreement(game) {
+  try {
+    if (!game) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    supabaseClient
+      .from('terms_agreements')
+      .insert([{
+        game_id: String(game.id),
+        game_slug: game.slug || null,
+        agreed: true,
+        terms_version: TERMS_VERSION
+        // user_id is filled by the table default auth.uid(): the kiosk has no Supabase Auth
+        // session (gamer logins use public.users), so it is NULL today.
+      }])
+      .abortSignal(controller.signal)
+      .then((result) => {
+        if (result && result.error) console.warn('Could not record terms agreement:', result.error);
+      }, (err) => console.warn('Could not record terms agreement:', err))
+      .finally(() => clearTimeout(timer));
+  } catch (err) {
+    console.warn('Could not record terms agreement:', err);
+  }
+}
+
 /* ==================== ROM PRINTING & INVOICE LOGGING ==================== */
 
 const CUSTOMER_EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
@@ -966,7 +1016,11 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo('screen-insert-cartridge');
   });
 
+  document.getElementById('terms-agree')?.addEventListener('change', updateCartridgeTermsState);
+
   document.getElementById('btn-cartridge-done')?.addEventListener('click', async () => {
+    if (!document.getElementById('terms-agree')?.checked) return; // terms not agreed: DONE is disabled
+    recordTermsAgreement(selectedGameForWishlist);
     const cartTitle = document.getElementById('printing-cart-title');
     if (cartTitle && selectedGameForWishlist) {
       cartTitle.innerText = selectedGameForWishlist.title || selectedGameForWishlist.name;
@@ -987,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-cartridge-back')?.addEventListener('click', () => {
+    if (!document.getElementById('terms-agree')?.checked) return; // terms not agreed: GO BACK is disabled
     navigateTo('modal-checkout');
   });
 

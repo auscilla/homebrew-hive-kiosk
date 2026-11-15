@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
@@ -199,9 +199,14 @@
     <div class="relative max-w-md my-auto flex items-center justify-center">
       <img src="assets/brand/insert-cartridge.png" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[50vh] object-contain animate-bounce" />
     </div>
-    <div class="flex flex-col gap-3 w-full max-w-xs mb-4">
-      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">DONE</button>
-      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">GO BACK</button>
+    <div id="cartridge-actions" class="flex flex-col gap-3 w-full max-w-xs mb-4 terms-pending">
+      <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider" disabled>DONE</button>
+      <button id="btn-cartridge-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider" disabled>GO BACK</button>
+      <!-- Terms agreement: DONE and GO BACK stay disabled until this is ticked (reset each time this screen opens) -->
+      <label for="terms-agree" class="flex items-center gap-2 text-left text-[9px] text-zinc-300 leading-snug cursor-pointer">
+        <input type="checkbox" id="terms-agree" class="terms-checkbox shrink-0" />
+        <span>I am at least 13 years old and agree to the Homebrew Hive Terms.</span>
+      </label>
     </div>
   </div>
 
@@ -349,6 +354,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>
