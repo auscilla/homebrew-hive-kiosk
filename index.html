@@ -174,11 +174,13 @@
             <video id="preview-video" autoplay loop muted class="absolute top-0 left-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
-            <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"></iframe>
             <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
               <img id="preview-play-icon" src="assets/brand/icon-play.png?v=20" class="w-12 h-12 opacity-80" alt="" />
               <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
             </div>
+            <!-- Top title/channel strip only. The bottom control bar (play, volume, fullscreen) stays clickable. -->
+            <div id="preview-title-guard" class="absolute top-0 left-0 z-30 hidden w-full" style="display:none;position:absolute;top:0;left:0;width:100%;height:60px;z-index:30;background:transparent" aria-hidden="true"></div>
           </div>
           <div id="screen-grabs-container" class="mt-1 pb-2"></div>
         </div>
@@ -344,6 +346,14 @@
     </div>
   </div>
 
+  <!-- Shown when something tries to leave the kiosk. Countdown is filled in by app.js. -->
+  <div id="modal-leave-guard" class="hidden fixed inset-0 flex items-center justify-center p-6" style="display:none;position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.92);align-items:center;justify-content:center" role="alertdialog" aria-modal="true" aria-labelledby="leave-guard-title">
+    <div class="bg-zinc-900 border-4 border-amber-500 rounded-3xl w-full max-w-md p-8 text-center" style="background:#18181b;border:4px solid #f59e0b;border-radius:24px;padding:32px;max-width:28rem;width:100%;text-align:center">
+      <h2 id="leave-guard-title" class="text-xs text-amber-400 leading-relaxed" style="color:#fbbf24;font-size:14px;line-height:1.6;margin:0 0 20px">You can't leave the kiosk app</h2>
+      <div id="leave-guard-count" style="color:#ffffff;font-size:64px;line-height:1" aria-live="assertive">5</div>
+    </div>
+  </div>
+
   <!-- VIRTUAL KEYBOARD CONTAINER WITH NEW PREVIEW BAR -->
   <div id="keyboard-wrapper" class="hidden fixed bottom-0 left-0 w-full bg-zinc-950 border-t-4 border-amber-500 p-4 z-[9999] shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
     <div class="flex justify-between items-center mb-2 px-2 gap-4">
@@ -357,6 +367,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

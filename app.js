@@ -3,7 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Cache-busting: local images built in JS carry the same ?v= token as index.html's images.
-const ASSET_VERSION = '20';
+const ASSET_VERSION = '21';
 // The version this app.js was loaded as (from its own <script src="app.js?v=...">).
 const RUNNING_APP_VERSION = (() => {
   try { return new URL(document.currentScript.src).searchParams.get('v'); } catch (e) { return null; }
@@ -251,6 +251,7 @@ function openCheckout(gameId) {
       iframe.classList.remove('hidden');
     }
     if (playIcon) playIcon.classList.add('hidden');
+    setPreviewTitleGuard(true);
   } else if (videoUrl) {
     if (iframe) {
       iframe.src = '';
@@ -262,10 +263,12 @@ function openCheckout(gameId) {
       video.load();
     }
     if (playIcon) playIcon.classList.remove('hidden');
+    setPreviewTitleGuard(false);
   } else {
     if (iframe) { iframe.src = ''; iframe.classList.add('hidden'); }
     if (video) video.classList.add('hidden');
     if (playIcon) playIcon.classList.remove('hidden');
+    setPreviewTitleGuard(false);
   }
 
   currentLightboxImages = selectedGame.screenshots || [];
@@ -868,6 +871,199 @@ function handleHardwareError(errorData) {
   navigateTo('screen-error');
 }
 
+/* ==================== KIOSK LEAVE GUARD ==================== */
+// External links, window.open, other-origin form posts, and the YouTube title strip
+// show "You can't leave the kiosk app" with a 5-second countdown, then go home.
+
+let leaveGuardTimer = null;
+let leaveGuardActive = false;
+let previewLeaveWatch = null;
+let kioskLeaveGuardInstalled = false;
+
+function setLeaveGuardVisible(on) {
+  const modal = document.getElementById('modal-leave-guard');
+  if (!modal) return;
+  modal.classList.toggle('hidden', !on);
+  modal.style.display = on ? 'flex' : 'none';
+}
+
+function setPreviewTitleGuard(on) {
+  const guard = document.getElementById('preview-title-guard');
+  if (!guard) return;
+  guard.classList.toggle('hidden', !on);
+  guard.style.display = on ? 'block' : 'none';
+}
+
+function anchorLeavesApp(anchor) {
+  if (!anchor || anchor.tagName !== 'A') return false;
+  const target = (anchor.getAttribute('target') || '').trim().toLowerCase();
+  if (target === '_blank') return true;
+  const hrefAttr = anchor.getAttribute('href');
+  if (hrefAttr == null) return false;
+  const href = hrefAttr.trim();
+  if (href === '' || href.startsWith('#')) return false;
+  let url;
+  try {
+    url = new URL(anchor.href, location.href);
+  } catch (err) {
+    return false;
+  }
+  if (url.protocol === 'javascript:') return false;
+  return url.origin !== location.origin;
+}
+
+function formLeavesApp(form, submitter) {
+  if (!form || form.tagName !== 'FORM') return false;
+  // A submit button's formAction IDL is the document URL when formaction is omitted,
+  // so only trust it when the attribute is actually set. Otherwise use the form action.
+  const action = (submitter && typeof submitter.hasAttribute === 'function' && submitter.hasAttribute('formaction'))
+    ? submitter.formAction
+    : form.action;
+  let url;
+  try {
+    url = new URL(action, location.href);
+  } catch (err) {
+    return false;
+  }
+  return url.origin !== location.origin;
+}
+
+function clearPreviewLeaveWatch() {
+  if (!previewLeaveWatch) return;
+  clearTimeout(previewLeaveWatch.timer);
+  previewLeaveWatch = null;
+}
+
+// Same view as a fresh load of index.html: checkStoreSession() lands here too.
+function returnToKioskHome() {
+  clearPreviewLeaveWatch();
+  const iframe = document.getElementById('preview-iframe');
+  if (iframe) {
+    iframe.src = '';
+    iframe.classList.add('hidden');
+  }
+  const video = document.getElementById('preview-video');
+  if (video) {
+    try { video.pause(); } catch (err) { /* already stopped */ }
+    video.classList.add('hidden');
+  }
+  setPreviewTitleGuard(false);
+  [
+    'modal-leave-guard',
+    'modal-wishlist-view',
+    'modal-lightbox',
+    'modal-wishlist-auth',
+    'modal-label-email',
+    'modal-home-confirm',
+    'keyboard-wrapper'
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('hidden');
+    if (id === 'modal-leave-guard') el.style.display = 'none';
+  });
+  if (typeof navigateTo === 'function') navigateTo('screen-landing');
+  else location.href = new URL('./', location.href).href;
+}
+
+function showKioskLeaveGuard() {
+  const countEl = document.getElementById('leave-guard-count');
+  if (!countEl || !document.getElementById('modal-leave-guard')) return;
+  if (leaveGuardActive) return;
+  leaveGuardActive = true;
+  clearPreviewLeaveWatch();
+  let remaining = 5;
+  countEl.textContent = String(remaining);
+  setLeaveGuardVisible(true);
+  if (leaveGuardTimer) clearInterval(leaveGuardTimer);
+  leaveGuardTimer = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(leaveGuardTimer);
+      leaveGuardTimer = null;
+      leaveGuardActive = false;
+      setLeaveGuardVisible(false);
+      returnToKioskHome();
+      return;
+    }
+    countEl.textContent = String(remaining);
+  }, 1000);
+}
+
+function onPreviewTitleGuardActivate(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  showKioskLeaveGuard();
+}
+
+function installKioskLeaveGuard() {
+  if (kioskLeaveGuardInstalled) return;
+  if (!document.getElementById('modal-leave-guard')) return;
+  kioskLeaveGuardInstalled = true;
+
+  // (b) Any window.open is a leave attempt. Do not open the window.
+  window.open = function () {
+    showKioskLeaveGuard();
+    return null;
+  };
+
+  // (a) Capture phase so we run before the link navigates or a target handler does.
+  const onAnchorClick = (e) => {
+    if (e.type === 'auxclick' && e.button !== 1) return;
+    const anchor = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (!anchor || !anchorLeavesApp(anchor)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    showKioskLeaveGuard();
+  };
+  document.addEventListener('click', onAnchorClick, true);
+  document.addEventListener('auxclick', onAnchorClick, true);
+
+  // (c) Form posts that would leave this origin.
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!formLeavesApp(form, e.submitter || null)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    showKioskLeaveGuard();
+  }, true);
+
+  // (d) Title/channel strip. Transparent; only the top 60px, so playback controls stay usable.
+  const titleGuard = document.getElementById('preview-title-guard');
+  if (titleGuard) {
+    titleGuard.addEventListener('click', onPreviewTitleGuardActivate);
+    titleGuard.addEventListener('touchend', onPreviewTitleGuardActivate, { passive: false });
+  }
+
+  // (d) Fallback: a click inside the preview iframe that opens a new tab blurs this window
+  // and hides the document within a second. Play/pause focuses the iframe but stays visible,
+  // so it must not show the popup. Show it when the kiosk tab is visible again.
+  window.addEventListener('blur', () => {
+    const iframe = document.getElementById('preview-iframe');
+    if (!iframe || iframe.classList.contains('hidden')) return;
+    if (document.activeElement !== iframe) return;
+    clearPreviewLeaveWatch();
+    const watch = { pending: document.visibilityState === 'hidden' };
+    watch.timer = setTimeout(() => {
+      if (previewLeaveWatch === watch && !watch.pending) previewLeaveWatch = null;
+    }, 1000);
+    previewLeaveWatch = watch;
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    const watch = previewLeaveWatch;
+    if (!watch) return;
+    if (document.visibilityState === 'hidden') {
+      watch.pending = true;
+      return;
+    }
+    if (document.visibilityState === 'visible' && watch.pending) {
+      clearPreviewLeaveWatch();
+      showKioskLeaveGuard();
+    }
+  });
+}
+
 /* ==================== INITIALIZATION & EVENT LISTENERS ==================== */
 
 /* ==================== STARTUP UPDATE CHECK ==================== */
@@ -910,6 +1106,7 @@ function startupUpdateCheck() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  installKioskLeaveGuard();
   startupUpdateCheck();
   checkStoreSession(); 
   loadGamesFromSupabase();
@@ -1261,3 +1458,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 });
+
+installKioskLeaveGuard();
