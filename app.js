@@ -3,7 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Cache-busting: local images built in JS carry the same ?v= token as index.html's images.
-const ASSET_VERSION = '20';
+const ASSET_VERSION = '21';
 // The version this app.js was loaded as (from its own <script src="app.js?v=...">).
 const RUNNING_APP_VERSION = (() => {
   try { return new URL(document.currentScript.src).searchParams.get('v'); } catch (e) { return null; }
@@ -53,12 +53,13 @@ function getYouTubeEmbedUrl(url) {
     videoId = url.split('v=')[1]?.split('&')[0];
   } else if (url.includes('youtu.be/')) {
     videoId = url.split('youtu.be/')[1]?.split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
+  } else if (url.includes('youtube-nocookie.com/embed/') || url.includes('youtube.com/embed/')) {
     videoId = url.split('embed/')[1]?.split('?')[0];
   }
 
   if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1`;
+    // Kiosk Chromium blocks youtube.com frame navigations. The privacy-enhanced host is allowed.
+    return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1`;
   }
   return null;
 }
