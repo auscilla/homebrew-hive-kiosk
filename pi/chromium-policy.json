@@ -1,0 +1,43 @@
+{
+  "URLBlocklist": [
+    "youtube.com",
+    "www.youtube.com",
+    "m.youtube.com",
+    "youtu.be",
+    "music.youtube.com",
+    "facebook.com",
+    "www.facebook.com",
+    "m.facebook.com",
+    "instagram.com",
+    "www.instagram.com",
+    "tiktok.com",
+    "www.tiktok.com",
+    "twitter.com",
+    "x.com",
+    "www.x.com",
+    "reddit.com",
+    "www.reddit.com"
+  ],
+  "URLAllowlist": [
+    "youtube.com/embed/*",
+    "https://youtube.com/embed/*",
+    "www.youtube.com/embed/*",
+    "https://www.youtube.com/embed/*",
+    "m.youtube.com/embed/*",
+    "https://m.youtube.com/embed/*",
+    "www.youtube.com/s/player/*",
+    "https://www.youtube.com/s/player/*",
+    "www.youtube.com/iframe_api",
+    "https://www.youtube.com/iframe_api",
+    "youtube-nocookie.com",
+    "[*.]youtube-nocookie.com",
+    "[*.]ytimg.com",
+    "[*.]googlevideo.com"
+  ],
+  "DefaultPopupsSetting": 2,
+  "DeveloperToolsAvailability": 2,
+  "IncognitoModeAvailability": 1,
+  "PrintingEnabled": false,
+  "PasswordManagerEnabled": false,
+  "TranslateEnabled": false
+}

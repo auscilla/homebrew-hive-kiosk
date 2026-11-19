@@ -1,0 +1,13 @@
+[Unit]
+Description=Continue Homebrew Hive OS update after the overlay is off
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/hive-kiosk/update-pending
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/hive-update.sh --continue
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

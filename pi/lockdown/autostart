@@ -1,0 +1,24 @@
+#!/bin/sh
+# Homebrew Hive kiosk session. This file replaces the labwc system autostart,
+# so the desktop panel and its menu are not started.
+if command -v xset >/dev/null 2>&1; then
+  xset s off || true
+  xset s noblank || true
+  xset -dpms || true
+fi
+
+# Stop a panel if some other startup still launched one.
+pkill -x wf-panel-pi 2>/dev/null || true
+pkill -x lxpanel 2>/dev/null || true
+
+if [ "${XDG_SESSION_TYPE:-}" = "x11" ] && command -v unclutter >/dev/null 2>&1; then
+  unclutter -idle 0 -root >/dev/null 2>&1 &
+fi
+
+if [ -d /usr/share/icons/hive-blank ]; then
+  export XCURSOR_THEME=hive-blank
+  export XCURSOR_SIZE=1
+fi
+
+systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_RUNTIME_DIR XCURSOR_THEME XCURSOR_SIZE 2>/dev/null || true
+systemctl --user start kiosk.service

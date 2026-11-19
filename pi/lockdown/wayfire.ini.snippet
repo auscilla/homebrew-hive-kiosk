@@ -1,0 +1,16 @@
+# Appended only when Wayfire is the compositor (current Pi OS uses labwc).
+[command]
+repeatable_binding_hive_alt_f4 = KEY_F4 + KEY_LEFTALT
+command_hive_alt_f4 = true
+repeatable_binding_hive_ctrl_w = KEY_W + KEY_LEFTCTRL
+command_hive_ctrl_w = true
+repeatable_binding_hive_ctrl_q = KEY_Q + KEY_LEFTCTRL
+command_hive_ctrl_q = true
+repeatable_binding_hive_terminal = KEY_T + KEY_LEFTCTRL + KEY_LEFTALT
+command_hive_terminal = true
+repeatable_binding_hive_alt_tab = KEY_TAB + KEY_LEFTALT
+command_hive_alt_tab = true
+
+[autostart]
+hive_panel_off = pkill -x wf-panel-pi || true
+hive_kiosk = systemctl --user start kiosk.service
