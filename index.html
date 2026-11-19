@@ -15,13 +15,14 @@
   <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13" />
+  <link rel="icon" href="assets/brand/bee-flying.png?v=21" />
+  <link rel="stylesheet" href="style.css?v=14" />
 </head>
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
   <!-- ==================== SCREEN 0: STORE SETUP LOGIN ==================== -->
   <div id="screen-store-login" class="screen active flex flex-col items-center justify-center h-full p-12 text-center bg-zinc-950 z-[100]">
-    <img src="assets/brand/bee-flying.png?v=20" alt="Bee" class="w-16 h-16 mb-6 animate-bounce" />
+    <img src="assets/brand/bee-flying.png?v=21" alt="Bee" class="w-16 h-16 mb-6 animate-bounce" />
     <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mb-2 tracking-wide">
       KIOSK SETUP
     </h1>
@@ -48,9 +49,11 @@
 
       <!-- Hidden Reset PIN Container -->
       <div id="reset-pin-container" class="hidden flex-col gap-3 w-full border-t border-zinc-700 pt-4">
-        <p class="text-[10px] text-zinc-400 mb-1">Enter your store email to set a new 4-digit PIN.</p>
+        <p class="text-[10px] text-zinc-400 mb-1">Enter your store email, your current PIN, and a new 4-digit PIN twice.</p>
         <input type="email" id="reset-email" placeholder="shop@retrogames.com" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-amber-500" />
+        <input type="password" id="reset-current-pin" maxlength="4" placeholder="Current PIN" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
         <input type="password" id="reset-new-pin" maxlength="4" placeholder="New 4-Digit PIN" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
+        <input type="password" id="reset-new-pin-again" maxlength="4" placeholder="Repeat New PIN" autocomplete="new-password" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-xs text-white tracking-widest text-center focus:outline-none focus:border-amber-500" />
         <p id="reset-msg" class="hidden text-[10px] font-bold"></p>
         <div class="flex gap-2 mt-2">
           <button id="btn-submit-reset" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">UPDATE</button>
@@ -72,9 +75,9 @@
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" 
               stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
-      <img src="assets/brand/bee-flying.png?v=20" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
+      <img src="assets/brand/bee-flying.png?v=21" alt="Bee" class="absolute -left-6 top-1/2 -translate-y-1/2 w-10 h-10 animate-bounce z-20" />
       <div class="relative w-48 h-56 flex items-center justify-center z-10">
-        <img src="assets/brand/cartridge-gold.png?v=20" alt="Cartridge" class="w-full h-full object-contain" />
+        <img src="assets/brand/cartridge-gold.png?v=21" alt="Cartridge" class="w-full h-full object-contain" />
       </div>
     </div>
 
@@ -99,7 +102,7 @@
         <input type="text" id="search-input" placeholder="SEARCH GAMES..." autocomplete="new-password" class="bg-transparent text-amber-400 text-xs font-bold placeholder-zinc-500 focus:outline-none w-64 uppercase tracking-wider" />
       </div>
       <button id="btn-home" onclick="navigateTo('screen-landing')" class="flex flex-col items-center justify-center bg-zinc-700 px-4 py-1.5 rounded-lg text-[10px] hover:bg-zinc-600 font-bold">
-        <img src="assets/brand/bee-flying.png?v=20" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
+        <img src="assets/brand/bee-flying.png?v=21" alt="Bee" class="w-5 h-5 mb-0.5 object-contain" />
         <span>HOME</span>
       </button>
     </div>
@@ -174,9 +177,9 @@
             <video id="preview-video" autoplay loop muted class="absolute top-0 left-0 w-full h-full object-cover">
               <source id="preview-video-src" src="" type="video/mp4" />
             </video>
-            <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe id="preview-iframe" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
             <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
-              <img id="preview-play-icon" src="assets/brand/icon-play.png?v=20" class="w-12 h-12 opacity-80" alt="" />
+              <img id="preview-play-icon" src="assets/brand/icon-play.png?v=21" class="w-12 h-12 opacity-80" alt="" />
               <span class="absolute bottom-2 text-[8px] bg-black/60 px-2 py-1 rounded">PREVIEW VIDEO</span>
             </div>
           </div>
@@ -200,7 +203,7 @@
   <div id="screen-insert-cartridge" class="screen hidden flex-col items-center justify-between h-full p-8 text-center bg-zinc-950">
     <h1 class="text-2xl md:text-3xl font-bold text-amber-400 mt-4 tracking-wide">PLEASE INSERT CARTRIDGE</h1>
     <div class="relative max-w-md my-auto flex items-center justify-center">
-      <img src="assets/brand/insert-cartridge.png?v=20" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[50vh] object-contain animate-bounce" />
+      <img src="assets/brand/insert-cartridge.png?v=21" alt="Insert Cartridge Kiosk Top" class="w-full max-h-[50vh] object-contain animate-bounce" />
     </div>
     <div id="cartridge-actions" class="flex flex-col gap-3 w-full max-w-xs mb-4 terms-pending">
       <button id="btn-cartridge-done" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider" disabled>DONE</button>
@@ -221,10 +224,10 @@
         <path d="M 80 170 C 40 30, 260 30, 260 170 C 260 310, 480 310, 440 170 C 400 30, 180 30, 180 170 C 180 310, 80 310, 80 170 Z" stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" />
       </svg>
       <div class="w-56 h-64 relative flex items-center justify-center z-10">
-        <img src="assets/brand/cartridge-stack.png?v=20" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
+        <img src="assets/brand/cartridge-stack.png?v=21" alt="Stack" class="absolute inset-0 w-full h-full object-contain" />
         <div id="printing-cart-title" class="relative z-10 bg-zinc-950/90 text-amber-400 text-[10px] p-2 rounded max-w-[130px] text-center font-bold truncate border border-amber-500/50">GAME TITLE</div>
       </div>
-      <img src="assets/brand/bee-flying.png?v=20" alt="Bee" class="absolute -top-4 -left-4 w-8 h-8 animate-pulse z-20" />
+      <img src="assets/brand/bee-flying.png?v=21" alt="Bee" class="absolute -top-4 -left-4 w-8 h-8 animate-pulse z-20" />
     </div>
     <div class="w-full max-w-md bg-zinc-900 h-8 rounded-full border-2 border-zinc-600 overflow-hidden relative p-1 shadow-inner z-10">
       <div id="progress-bar" class="bg-honey h-full rounded-full w-0 transition-all duration-300"></div>
@@ -235,7 +238,7 @@
   <!-- ==================== SUCCESS SCREEN ==================== -->
   <div id="screen-success" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
     <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 mb-6 tracking-wide">SUCCESS!</h1>
-    <img src="assets/brand/bee-flying.png?v=20" alt="Happy Bee" class="w-20 h-20 mb-6 animate-bounce" />
+    <img src="assets/brand/bee-flying.png?v=21" alt="Happy Bee" class="w-20 h-20 mb-6 animate-bounce" />
     <p class="text-zinc-200 text-sm max-w-lg mb-8 leading-relaxed">Please remove your cartridge from the slot.</p>
     <div class="flex flex-col gap-3 w-full max-w-xs">
       <button id="btn-success-label" class="bg-amber-500 hover:bg-amber-400 text-black py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">Get Your Label!</button>
@@ -246,7 +249,7 @@
   <!-- ==================== ERROR SCREEN ==================== -->
   <div id="screen-error" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950">
     <h1 class="text-xl md:text-2xl font-bold text-rose-500 mb-6 tracking-wide">ERROR: PRINTING FAILED</h1>
-    <img src="assets/brand/bee-sad.png?v=20" alt="Sad Bee" class="w-20 h-20 mb-6 object-contain animate-bounce" />
+    <img src="assets/brand/bee-sad.png?v=21" alt="Sad Bee" class="w-20 h-20 mb-6 object-contain animate-bounce" />
     <p class="text-zinc-300 text-xs max-w-md mb-8 leading-relaxed">Something went wrong while flashing the cartridge.</p>
     <button id="btn-error-reset" class="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl text-xs border border-zinc-600 font-bold">Return to Home</button>
   </div>
@@ -320,7 +323,7 @@
 
       <!-- STEP 3: Success Message -->
       <div id="label-email-success" class="hidden p-6 flex flex-col gap-4 items-center text-center">
-        <img src="assets/brand/bee-flying.png?v=20" class="w-16 h-16 animate-bounce" alt="Bee" />
+        <img src="assets/brand/bee-flying.png?v=21" class="w-16 h-16 animate-bounce" alt="Bee" />
         <h3 id="label-email-success-title" class="text-emerald-400 font-bold text-lg">Thanks!</h3>
         <p id="label-email-success-msg" class="text-[10px] text-zinc-300 leading-relaxed">
           Get your free game sticker at homebrewhive.com/sticker
@@ -357,6 +360,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

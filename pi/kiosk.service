@@ -1,0 +1,15 @@
+[Unit]
+Description=Homebrew Hive Chromium kiosk
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+Environment=XCURSOR_THEME=hive-blank
+Environment=XCURSOR_SIZE=1
+ExecStart=/usr/local/bin/hive-kiosk
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

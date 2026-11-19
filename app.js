@@ -3,7 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_I27CpcilWluOjUSSb6y_pQ_t9ylEjmB';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Cache-busting: local images built in JS carry the same ?v= token as index.html's images.
-const ASSET_VERSION = '20';
+const ASSET_VERSION = '21';
 // The version this app.js was loaded as (from its own <script src="app.js?v=...">).
 const RUNNING_APP_VERSION = (() => {
   try { return new URL(document.currentScript.src).searchParams.get('v'); } catch (e) { return null; }
@@ -36,31 +36,178 @@ let currentLightboxIndex = 0;
 
 /* ==================== HELPER: URL & VIDEO FORMATTERS ==================== */
 
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// http and https only. Relative asset paths resolve against this page.
+function safeHttpUrl(url) {
+  if (url == null) return '';
+  const raw = String(url).trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw, window.location.href);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.href;
+  } catch (e) {
+    return '';
+  }
+}
+
+function safeImgSrc(url) {
+  return safeHttpUrl(url) || safeHttpUrl(`assets/brand/snap.png?v=${ASSET_VERSION}`);
+}
+
+const USER_PUBLIC_FIELDS = ['id', 'created_at', 'email', 'account_type', 'wishlist', 'purchases'];
+
+function publicUser(row) {
+  if (!row || typeof row !== 'object') return null;
+  const user = {};
+  USER_PUBLIC_FIELDS.forEach((key) => {
+    user[key] = row[key];
+  });
+  return user;
+}
+
+function pinResultRows(data) {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') return [data];
+  return [];
+}
+
+function clearInput(id) {
+  const el = document.getElementById(id);
+  if (el) el.value = '';
+}
+
 function formatImageUrl(url) {
   if (!url) return '';
-  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const driveMatch = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (driveMatch && driveMatch[1]) {
     return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`;
   }
   return url;
 }
 
-function getYouTubeEmbedUrl(url) {
+function youtubeVideoId(url) {
   if (!url) return null;
+  const text = String(url);
   let videoId = null;
-
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1]?.split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1]?.split('?')[0];
+  if (text.includes('youtube.com/watch?v=')) {
+    videoId = text.split('v=')[1]?.split('&')[0];
+  } else if (text.includes('youtu.be/')) {
+    videoId = text.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0];
+  } else if (text.includes('youtube.com/embed/') || text.includes('youtube-nocookie.com/embed/')) {
+    videoId = text.split('embed/')[1]?.split('?')[0]?.split('&')[0];
   }
-
-  if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1`;
-  }
+  if (videoId && /^[A-Za-z0-9_-]{6,64}$/.test(videoId)) return videoId;
   return null;
+}
+
+function getYouTubeEmbedUrl(url) {
+  const videoId = youtubeVideoId(url);
+  if (!videoId) return null;
+  return `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0&rel=0&controls=1&modestbranding=1&enablejsapi=1&fs=1&playsinline=1`;
+}
+
+let hiveYtPlayer = null;
+let hiveYtPendingId = null;
+let hiveYtApiLoading = false;
+const hiveYtReadyWaiters = [];
+
+function unmuteYouTubePlayer(player) {
+  player.setVolume(100);
+  player.unMute();
+}
+
+function styleYouTubeFrame(player) {
+  const frame = player && player.getIframe ? player.getIframe() : document.getElementById('preview-iframe');
+  if (!frame) return;
+  frame.className = 'absolute top-0 left-0 w-full h-full';
+  frame.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen');
+}
+
+function ensureYouTubeApi(done) {
+  if (window.YT && window.YT.Player) {
+    done();
+    return;
+  }
+  hiveYtReadyWaiters.push(done);
+  if (hiveYtApiLoading) return;
+  hiveYtApiLoading = true;
+  const previous = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => {
+    if (typeof previous === 'function') previous();
+    hiveYtReadyWaiters.splice(0).forEach((fn) => fn());
+  };
+  if (!document.getElementById('hive-youtube-api')) {
+    const tag = document.createElement('script');
+    tag.id = 'hive-youtube-api';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.async = true;
+    document.head.appendChild(tag);
+  }
+}
+
+function mountYouTubePlayer(videoId) {
+  hiveYtPendingId = videoId;
+  const iframe = document.getElementById('preview-iframe');
+  const embed = getYouTubeEmbedUrl(`https://www.youtube.com/embed/${videoId}`);
+  if (iframe && embed) {
+    iframe.classList.remove('hidden');
+    if (iframe.src !== embed) iframe.src = embed;
+  }
+  ensureYouTubeApi(() => {
+    if (hiveYtPendingId !== videoId) return;
+    if (!(window.YT && window.YT.Player)) return;
+    if (hiveYtPlayer && typeof hiveYtPlayer.cueVideoById === 'function') {
+      hiveYtPlayer.cueVideoById(videoId);
+      unmuteYouTubePlayer(hiveYtPlayer);
+      styleYouTubeFrame(hiveYtPlayer);
+      return;
+    }
+    const playerVars = {
+      autoplay: 0,
+      mute: 0,
+      rel: 0,
+      controls: 1,
+      modestbranding: 1,
+      fs: 1,
+      playsinline: 1,
+      enablejsapi: 1
+    };
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      playerVars.origin = location.origin;
+    }
+    hiveYtPlayer = new YT.Player('preview-iframe', {
+      videoId,
+      playerVars,
+      events: {
+        onReady: (event) => {
+          event.target.setVolume(100);
+          event.target.unMute();
+          styleYouTubeFrame(event.target);
+        }
+      }
+    });
+  });
+}
+
+function hideYouTubePlayer() {
+  hiveYtPendingId = null;
+  try {
+    if (hiveYtPlayer && hiveYtPlayer.stopVideo) hiveYtPlayer.stopVideo();
+  } catch (e) {
+    // The iframe may already be gone.
+  }
+  const frame = (hiveYtPlayer && hiveYtPlayer.getIframe && hiveYtPlayer.getIframe()) || document.getElementById('preview-iframe');
+  if (frame) frame.classList.add('hidden');
 }
 
 /* ==================== SUPABASE DATA LOADING ==================== */
@@ -146,15 +293,18 @@ function renderGames(gamesList) {
   const grid = document.getElementById('game-grid');
   if (!grid) return;
 
-  grid.innerHTML = gamesList.map(game => `
-    <div onclick="openCheckout('${game.id}')" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
-      <img src="${game.image_url}" alt="${game.title || game.name}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
+  grid.innerHTML = gamesList.map(game => {
+    const title = game.title || game.name || '';
+    return `
+    <div data-game-id="${escapeHtml(game.id)}" class="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400 transition-colors">
+      <img src="${escapeHtml(safeImgSrc(game.image_url))}" alt="${escapeHtml(title)}" class="w-full aspect-square object-cover rounded-lg mb-2 bg-zinc-950" />
       <div>
-        <h4 class="text-[12px] font-bold text-amber-400 mb-1 leading-tight whitespace-nowrap overflow-hidden text-ellipsis block">${game.title || game.name}</h4>
-        <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${game.description}</p>
+        <h4 class="text-[12px] font-bold text-amber-400 mb-1 leading-tight whitespace-nowrap overflow-hidden text-ellipsis block">${escapeHtml(title)}</h4>
+        <p class="text-[8px] text-zinc-400 line-clamp-3 leading-relaxed mb-2">${escapeHtml(game.description || '')}</p>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function filterCategory(categoryName) {
@@ -230,40 +380,35 @@ function openCheckout(gameId) {
   if (!selectedGame) return;
 
   selectedGameForWishlist = selectedGame;
-  document.getElementById('detail-title').innerText = selectedGame.title || selectedGame.name;
+  document.getElementById('detail-title').innerText = selectedGame.title || selectedGame.name || '';
   document.getElementById('detail-price').innerText = `Price: ${selectedGame.price || '$0.00'}`;
-  document.getElementById('detail-img').src = selectedGame.image_url;
+  document.getElementById('detail-img').src = safeImgSrc(selectedGame.image_url);
   
   document.getElementById('detail-description').innerText = selectedGame.description || 'No description available for this game.';
 
   const video = document.getElementById('preview-video');
   const videoSrc = document.getElementById('preview-video-src');
-  const iframe = document.getElementById('preview-iframe');
   const playIcon = document.getElementById('preview-play-icon');
 
   const videoUrl = selectedGame.video_url || '';
-  const youtubeEmbedUrl = getYouTubeEmbedUrl(videoUrl);
+  const youtubeId = youtubeVideoId(videoUrl);
+  const safeVideo = safeHttpUrl(videoUrl);
 
-  if (youtubeEmbedUrl) {
+  if (youtubeId) {
     if (video) video.classList.add('hidden');
-    if (iframe) {
-      iframe.src = youtubeEmbedUrl;
-      iframe.classList.remove('hidden');
-    }
+    mountYouTubePlayer(youtubeId);
     if (playIcon) playIcon.classList.add('hidden');
-  } else if (videoUrl) {
-    if (iframe) {
-      iframe.src = '';
-      iframe.classList.add('hidden');
-    }
+  } else if (safeVideo) {
+    hideYouTubePlayer();
     if (video && videoSrc) {
-      videoSrc.src = videoUrl;
+      videoSrc.src = safeVideo;
       video.classList.remove('hidden');
       video.load();
     }
     if (playIcon) playIcon.classList.remove('hidden');
   } else {
-    if (iframe) { iframe.src = ''; iframe.classList.add('hidden'); }
+    hideYouTubePlayer();
+    if (videoSrc) videoSrc.removeAttribute('src');
     if (video) video.classList.add('hidden');
     if (playIcon) playIcon.classList.remove('hidden');
   }
@@ -272,7 +417,7 @@ function openCheckout(gameId) {
   const container = document.getElementById('screen-grabs-container');
   if (container) {
     container.innerHTML = currentLightboxImages.map((src, index) => `
-      <img src="${src}" onclick="openLightbox(${index})" class="bg-zinc-900 rounded-lg aspect-square w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
+      <img src="${escapeHtml(safeImgSrc(src))}" data-lightbox-index="${Number(index)}" class="bg-zinc-900 rounded-lg aspect-square w-full object-cover border border-zinc-700 hover:border-amber-400 cursor-pointer transition-colors" alt="Grab" />
     `).join('');
   }
 
@@ -339,7 +484,7 @@ function openLightbox(index) {
   if (!currentLightboxImages.length) return;
   currentLightboxIndex = index;
   const lightboxImg = document.getElementById('lightbox-img');
-  if (lightboxImg) lightboxImg.src = currentLightboxImages[currentLightboxIndex];
+  if (lightboxImg) lightboxImg.src = safeImgSrc(currentLightboxImages[currentLightboxIndex]);
   const lightbox = document.getElementById('modal-lightbox');
   if (lightbox) lightbox.classList.remove('hidden');
 }
@@ -352,13 +497,13 @@ function closeLightbox() {
 function lightboxNext() {
   if (!currentLightboxImages.length) return;
   currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length;
-  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
+  document.getElementById('lightbox-img').src = safeImgSrc(currentLightboxImages[currentLightboxIndex]);
 }
 
 function lightboxPrev() {
   if (!currentLightboxImages.length) return;
   currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length;
-  document.getElementById('lightbox-img').src = currentLightboxImages[currentLightboxIndex];
+  document.getElementById('lightbox-img').src = safeImgSrc(currentLightboxImages[currentLightboxIndex]);
 }
 
 /* ==================== SESSION LOGIC (STORE & GAMER) ==================== */
@@ -378,15 +523,15 @@ async function handleStoreLogin() {
   loginBtn.innerText = 'AUTHENTICATING...';
 
   try {
-    const { data: store, error } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('email', emailInput)
-      .eq('pin', pinInput)
-      .eq('account_type', 'store')
-      .single();
+    const { data, error } = await supabaseClient.rpc('check_pin', {
+      p_email: emailInput,
+      p_pin: pinInput,
+      p_account_type: 'store'
+    });
+    const rows = error ? [] : pinResultRows(data);
+    const store = rows.length === 1 ? publicUser(rows[0]) : null;
 
-    if (error || !store) {
+    if (!store) {
       if (errorMsg) errorMsg.classList.remove('hidden');
       loginBtn.disabled = false;
       loginBtn.innerText = 'ACTIVATE KIOSK';
@@ -405,6 +550,8 @@ async function handleStoreLogin() {
     if (errorMsg) errorMsg.classList.remove('hidden');
     loginBtn.disabled = false;
     loginBtn.innerText = 'ACTIVATE KIOSK';
+  } finally {
+    clearInput('store-login-pin');
   }
 }
 
@@ -447,12 +594,12 @@ async function checkSavedUserSession() {
   try {
     const { data: user } = await supabaseClient
       .from('users')
-      .select('*')
+      .select('id,created_at,email,account_type,wishlist,purchases')
       .ilike('email', savedEmail)
       .eq('account_type', 'gamer')
       .single();
 
-    if (user) setCurrentUser(user);
+    if (user) setCurrentUser(publicUser(user));
   } catch (err) {
     console.error('Session restore failed:', err);
   }
@@ -513,15 +660,15 @@ async function openUserWishlistView() {
 
     const wishlistGames = GAMES_DATA.filter(g => savedTitles.includes(g.title || g.name));
     container.innerHTML = wishlistGames.map(game => {
-      const title = game.title || game.name;
+      const title = game.title || game.name || '';
       return `
         <div class="bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 flex flex-col h-fit hover:border-amber-400 transition-colors">
-          <div onclick="closeUserWishlistView(); openCheckout('${game.id}');" class="cursor-pointer">
-            <img src="${game.image_url}" alt="${title}" class="w-full aspect-square object-cover rounded-lg mb-1.5 bg-zinc-950" />
-            <h4 class="text-[10px] font-bold text-amber-400 leading-tight truncate">${title}</h4>
-            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${game.price || '$0.00'}</p>
+          <div data-game-id="${escapeHtml(game.id)}" class="cursor-pointer">
+            <img src="${escapeHtml(safeImgSrc(game.image_url))}" alt="${escapeHtml(title)}" class="w-full aspect-square object-cover rounded-lg mb-1.5 bg-zinc-950" />
+            <h4 class="text-[10px] font-bold text-amber-400 leading-tight truncate">${escapeHtml(title)}</h4>
+            <p class="text-[8px] text-zinc-400 leading-tight mb-2">${escapeHtml(game.price || '$0.00')}</p>
           </div>
-          <button onclick="event.stopPropagation(); removeFromWishlist('${title}');" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1 rounded-lg border border-rose-600 transition-colors">
+          <button type="button" data-remove-title="${escapeHtml(title)}" class="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-[9px] py-1 rounded-lg border border-rose-600 transition-colors">
             Remove
           </button>
         </div>
@@ -600,15 +747,15 @@ async function handleWishlistSubmission() {
   saveBtn.innerText = 'PROCESSING...';
 
   try {
-    const { data: user, error: loginError } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('email', emailInput)
-      .eq('pin', pinInput)
-      .eq('account_type', 'gamer')
-      .single();
+    const { data, error: loginError } = await supabaseClient.rpc('check_pin', {
+      p_email: emailInput,
+      p_pin: pinInput,
+      p_account_type: 'gamer'
+    });
+    const rows = loginError ? [] : pinResultRows(data);
+    const user = rows.length === 1 ? publicUser(rows[0]) : null;
 
-    if (loginError || !user) {
+    if (!user) {
       if (errorMsg) {
         errorMsg.innerText = 'Does Not Match, try again.';
         errorMsg.classList.remove('hidden');
@@ -634,6 +781,7 @@ async function handleWishlistSubmission() {
       errorMsg.classList.remove('hidden');
     }
   } finally {
+    clearInput('wishlist-pin-input');
     saveBtn.disabled = false;
   }
 }
@@ -916,6 +1064,27 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSavedUserSession();
 
   document.getElementById('btn-store-login')?.addEventListener('click', handleStoreLogin);
+  document.getElementById('game-grid')?.addEventListener('click', (event) => {
+    const card = event.target.closest('[data-game-id]');
+    if (!card || card.closest('#wishlist-items-container')) return;
+    openCheckout(card.getAttribute('data-game-id'));
+  });
+  document.getElementById('wishlist-items-container')?.addEventListener('click', (event) => {
+    const removeBtn = event.target.closest('[data-remove-title]');
+    if (removeBtn) {
+      removeFromWishlist(removeBtn.getAttribute('data-remove-title'));
+      return;
+    }
+    const card = event.target.closest('[data-game-id]');
+    if (!card) return;
+    closeUserWishlistView();
+    openCheckout(card.getAttribute('data-game-id'));
+  });
+  document.getElementById('screen-grabs-container')?.addEventListener('click', (event) => {
+    const img = event.target.closest('[data-lightbox-index]');
+    if (!img) return;
+    openLightbox(Number(img.getAttribute('data-lightbox-index')));
+  });
   document.getElementById('search-input')?.addEventListener('input', applyFilters);
   document.getElementById('btn-page-prev')?.addEventListener('click', () => changePage(-1));
   document.getElementById('btn-page-next')?.addEventListener('click', () => changePage(1));
@@ -979,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-skip-pin')?.addEventListener('click', () => {
     if (pinStepJustOpened()) return;
+    clearInput('label-pin-input');
     labelEmailSubmitted = true;
     renderLabelEmailSuccessCopy();
     document.getElementById('label-pin-form').classList.add('hidden');
@@ -996,6 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (errorMsg) errorMsg.classList.add('hidden');
+    clearInput('label-pin-input');
 
     labelEmailSubmitted = true;
     renderLabelEmailSuccessCopy();
@@ -1105,53 +1276,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-submit-reset')?.addEventListener('click', async () => {
     const email = document.getElementById('reset-email').value.trim().toLowerCase();
+    const currentPin = document.getElementById('reset-current-pin').value.trim();
     const newPin = document.getElementById('reset-new-pin').value.trim();
+    const newPinAgain = document.getElementById('reset-new-pin-again').value.trim();
     const msgEl = document.getElementById('reset-msg');
 
-    if (!email || !/^\d{4}$/.test(newPin)) {
-      msgEl.innerText = 'Enter a valid email and 4-digit PIN.';
+    const showResetError = (text) => {
+      msgEl.innerText = text;
       msgEl.className = 'text-[10px] font-bold text-rose-500';
       msgEl.classList.remove('hidden');
+    };
+
+    if (!email || !/^\d{4}$/.test(currentPin) || !/^\d{4}$/.test(newPin)) {
+      showResetError('Enter a valid email, your current PIN, and a new 4-digit PIN.');
+      return;
+    }
+    if (newPin !== newPinAgain) {
+      showResetError('New PIN entries do not match.');
       return;
     }
 
-    msgEl.innerText = 'Verifying account...';
+    msgEl.innerText = 'Updating PIN...';
     msgEl.className = 'text-[10px] font-bold text-amber-400';
     msgEl.classList.remove('hidden');
 
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .eq('account_type', 'store')
-      .single();
+    try {
+      const { data, error } = await supabaseClient.rpc('change_pin', {
+        p_email: email,
+        p_account_type: 'store',
+        p_old_pin: currentPin,
+        p_new_pin: newPin
+      });
 
-    if (error || !data) {
-      msgEl.innerText = 'Store email not found in database.';
-      msgEl.className = 'text-[10px] font-bold text-rose-500';
-      return;
-    }
+      if (error || data !== true) {
+        showResetError('Could not change PIN. Check the email and the current PIN.');
+        return;
+      }
 
-    const { error: updateError } = await supabaseClient
-      .from('users')
-      .update({ pin: newPin })
-      .eq('id', data.id);
-
-    if (updateError) {
-      msgEl.innerText = 'System error. Failed to update PIN.';
-      msgEl.className = 'text-[10px] font-bold text-rose-500';
-    } else {
       msgEl.innerText = 'Success! You can now log in with your new PIN.';
       msgEl.className = 'text-[10px] font-bold text-emerald-400';
       document.getElementById('reset-email').value = '';
-      document.getElementById('reset-new-pin').value = '';
-      
+
       setTimeout(() => {
         document.getElementById('reset-pin-container').classList.add('hidden');
         document.getElementById('reset-pin-container').classList.remove('flex');
         document.getElementById('login-fields-container').classList.remove('hidden');
         msgEl.classList.add('hidden');
       }, 3000);
+    } finally {
+      clearInput('reset-current-pin');
+      clearInput('reset-new-pin');
+      clearInput('reset-new-pin-again');
     }
   });
 
