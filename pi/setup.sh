@@ -147,15 +147,6 @@ install_bridge() {
   systemctl restart hive-bridge.service
 }
 
-enable_unattended() {
-  install -d /etc/apt/apt.conf.d
-  cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Unattended-Upgrade "1";
-EOF
-  systemctl enable unattended-upgrades
-}
-
 phase1() {
   if ! overlay_active; then
     echo "Phase 1: overlay is already off. Not rebooting."
@@ -187,7 +178,6 @@ phase2() {
   install_audio
   install_kiosk_session
   install_bridge
-  enable_unattended
 
   raspi-config nonint do_hostname "$HOSTNAME"
   raspi-config nonint do_wifi_country "$WIFI_COUNTRY"
@@ -205,7 +195,7 @@ phase2() {
   write_state phase2 || true
   # SSH stays up across this reboot so the Mac can read the new boot id.
   # install-from-mac.sh turns SSH off after that check unless KEEP_SSH=1.
-  echo "Enabling the overlay and rebooting. SSH stays on until the installer confirms the new boot."
+  disable_overlay_apt
   raspi_enable_overlay
   sync
   echo "HIVE_KIOSK_PHASE2_REBOOT"

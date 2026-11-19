@@ -4,7 +4,7 @@ Target machine: hostname `kiosk`, user `uscillaaa`, address `192.168.1.198`, Ras
 
 Chromium opens the live kiosk at `https://auscilla.github.io/homebrew-hive-kiosk/`.
 
-With the overlay on, package upgrades vanish at the next reboot. `update.sh` turns the overlay off, upgrades, turns it back on, and reboots. Run that from a keyboard on the Pi, or leave SSH on with `KEEP_SSH=1`.
+With the overlay on, package upgrades vanish at the next reboot, so the apt timers only waste RAM. When the overlay is enabled, the installer disables `apt-daily-upgrade.timer`, `apt-daily.timer`, and `unattended-upgrades`. OS updates happen through `pi/update.sh` (disable overlay, reboot, full-upgrade, enable overlay, reboot). Run that from a keyboard on the Pi, or leave SSH on with `KEEP_SSH=1`.
 
 ## Install from Aaron's Mac
 
@@ -72,6 +72,27 @@ Use Raspberry Pi Imager with Raspberry Pi OS 64-bit (desktop). In the imager set
 - SSH enabled
 
 Boot it, find it at `192.168.1.198` (or the address the router gives it), then start at step 1 above. Pass that address to `install-from-mac.sh` if it is not `192.168.1.198`.
+
+## Fix a Pi that already finished, with SSH off
+
+The lockdown does not bind Ctrl+Alt+F1 through Ctrl+Alt+F12, so a text console stays available. Kiosk guests still cannot log in without the account password.
+
+1. On the Pi keyboard, press Ctrl+Alt+F2.
+2. Type `uscillaaa` and press Enter.
+3. Type the password and press Enter.
+4. Paste this and press Enter. It does not change the password or turn SSH on.
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/auscilla/homebrew-hive-kiosk/cursor/pi-setup-and-pin-fixes/pi/fix-local.sh | sudo bash
+   ```
+
+5. Type the password again when sudo asks, and press Enter.
+
+You should see `Installing the fix scripts. SSH is not changed.` If the overlay is on, the next line is `Overlay is on. Disabling it and rebooting. The fix continues by itself.` The Pi reboots with no more typing. After that boot it prints the upgrade-timer line, runs the read-only checks, prints `Confirmed overlayroot=tmpfs`, then `Rebooting into the kiosk.` About 10 minutes, one or two reboots. The same check output is on the screen, in the journal (`journalctl -t hive-fix`), and in `/boot/firmware/hive-verify.txt`.
+
+Ctrl+Alt+F1 or Ctrl+Alt+F7 goes back to the kiosk picture if you switched away.
+
+If Ctrl+Alt+F2 does nothing on a Pi that was locked down before this fix, power it off, put the SD card in the Mac, and on the boot partition add `systemd.unit=multi-user.target` to the end of the single line in `cmdline.txt`. Boot, log in on the text console, and run the curl command above. The fix removes that token before the last reboot so the kiosk desktop comes back.
 
 ## Updates
 

@@ -171,6 +171,9 @@ echo "    Then type a new password for uscillaaa twice. This script does not sto
 run_remote_reboot "sudo KEEP_SSH=${KEEP_SSH:-0} bash ~/${REMOTE}/pi/setup.sh phase2"
 wait_for_new_boot "$old_boot"
 
+echo "==> Post-boot verify"
+ssh_cmd "$TARGET" "bash ~/${REMOTE}/pi/verify.sh" || echo "Verify script could not be run." >&2
+
 if [ "${KEEP_SSH:-0}" = "1" ]; then
   echo "==> KEEP_SSH=1, so SSH stays on."
 else

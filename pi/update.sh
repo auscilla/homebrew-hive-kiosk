@@ -34,7 +34,7 @@ apt-get -y \
   -o Dpkg::Options::=--force-confdef \
   -o Dpkg::Options::=--force-confold \
   full-upgrade
-echo "Re-enabling the overlay and rebooting."
+disable_overlay_apt
 raspi_enable_overlay
 sync
 reboot

@@ -2,11 +2,21 @@
 """Point labwc shortcuts at a no-op and drop the desktop right-click menu.
 
 Copies are edited in place. Fullscreen (F11) is left alone.
+Ctrl+Alt+F1 through Ctrl+Alt+F12 are not bound, so a text console
+(Ctrl+Alt+F2) stays reachable.
 """
 import sys
 import xml.etree.ElementTree as ET
 
 BLOCKED = ("A-F4", "C-w", "C-q", "C-A-t", "A-Tab", "A-grave")
+# Virtual terminals stay on the kernel. Never bind these.
+VT_KEYS = tuple("C-A-F%d" % n for n in range(1, 13))
+
+
+def drop_keybind(parent, key):
+    for node in list(parent.findall("keybind")):
+        if node.get("key") == key:
+            parent.remove(node)
 
 
 def noop_keybind(parent, key):
@@ -41,6 +51,8 @@ def main():
     keyboard = root.find("keyboard")
     if keyboard is None:
         keyboard = ET.SubElement(root, "keyboard")
+    for key in VT_KEYS:
+        drop_keybind(keyboard, key)
     for key in BLOCKED:
         noop_keybind(keyboard, key)
     mouse = root.find("mouse")
