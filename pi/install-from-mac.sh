@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Run on Aaron's Mac. Copies this repo's Pi files and drives both setup phases.
+# Run on Aaron's Mac. Safe to run again if a reboot interrupted the last try.
 # Usage: ./pi/install-from-mac.sh [user@host]
-# KEEP_SSH=1 leaves SSH enabled at the end.
+# KEEP_SSH=1 leaves SSH enabled after the final reboot.
 set -euo pipefail
 
 TARGET=${1:-uscillaaa@192.168.1.198}
@@ -10,8 +10,8 @@ REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 REMOTE=hive-kiosk
 
 SSH_BASE=(
-  -o ConnectTimeout=8
-  -o ServerAliveInterval=15
+  -o ConnectTimeout=5
+  -o ServerAliveInterval=5
   -o StrictHostKeyChecking=accept-new
 )
 
@@ -23,81 +23,166 @@ ssh_cmd() {
   ssh "${SSH_BASE[@]}" "$@"
 }
 
-copy_files() {
-  echo "==> Copying pi/, bridge.py, and hive-bridge.service to ${TARGET}:~/${REMOTE}/"
-  ssh_cmd "$TARGET" "mkdir -p ~/${REMOTE}"
-  scp "${SSH_BASE[@]}" -r \
-    "$REPO_DIR/pi" \
-    "$REPO_DIR/bridge.py" \
-    "$REPO_DIR/hive-bridge.service" \
-    "${TARGET}:~/${REMOTE}/"
+trim() {
+  printf '%s' "$1" | tr -d '[:space:]'
 }
 
-wait_for_ssh() {
-  local i
-  echo "==> Waiting for ${TARGET} to answer SSH"
-  i=1
-  while [ "$i" -le 40 ]; do
-    if ssh_cmd -o ConnectTimeout=5 "$TARGET" "echo HIVE_KIOSK_UP" >/dev/null 2>&1; then
-      echo "==> SSH is back."
+copy_files() {
+  local attempt
+  attempt=1
+  while [ "$attempt" -le 3 ]; do
+    echo "==> Copying pi/, bridge.py, and hive-bridge.service (attempt ${attempt} of 3)"
+    if ssh_cmd "$TARGET" "mkdir -p ~/${REMOTE}" \
+      && scp "${SSH_BASE[@]}" -r \
+        "$REPO_DIR/pi" \
+        "$REPO_DIR/bridge.py" \
+        "$REPO_DIR/hive-bridge.service" \
+        "${TARGET}:~/${REMOTE}/"; then
       return 0
     fi
-    i=$((i + 1))
+    echo "Copy failed." >&2
+    attempt=$((attempt + 1))
     sleep 5
   done
-  echo "The Pi did not come back on SSH." >&2
+  echo "Could not copy files after 3 tries." >&2
   return 1
 }
 
-echo "==> Step 1: copy files"
-copy_files
+read_boot_id() {
+  local id
+  id=$(ssh_cmd "$TARGET" "cat /proc/sys/kernel/random/boot_id")
+  trim "$id"
+}
 
-echo "==> Step 2: phase 1 (turn the overlay off if it is on, then reboot)"
-echo "    Type the current sudo password if the Pi asks for it."
-set +e
-ssh -t "${SSH_BASE[@]}" "$TARGET" "sudo bash ~/${REMOTE}/pi/setup.sh phase1"
-phase1_rc=$?
-set -e
+# 0 when raspi-config says the overlay is on, 1 when it is off.
+remote_overlay_on() {
+  local now fstype
+  now=$(ssh_cmd "$TARGET" "raspi-config nonint get_overlay_now" 2>/dev/null || true)
+  now=$(trim "$now")
+  if [ "$now" = "0" ]; then
+    return 0
+  fi
+  if [ "$now" = "1" ]; then
+    return 1
+  fi
+  fstype=$(ssh_cmd "$TARGET" "findmnt -n -o FSTYPE /" 2>/dev/null || true)
+  fstype=$(trim "$fstype")
+  if [ "$fstype" = "overlay" ]; then
+    return 0
+  fi
+  echo "Could not tell if the overlay is on (get_overlay_now='${now}', findmnt='${fstype}')." >&2
+  return 2
+}
 
-if [ "$phase1_rc" -eq 0 ]; then
-  echo "==> Phase 1 did not reboot. The overlay was already off."
-elif [ "$phase1_rc" -eq 255 ]; then
-  echo "==> Phase 1 is rebooting the Pi."
-  sleep 12
-  i=0
-  while [ "$i" -lt 12 ]; do
-    if ! ssh_cmd -o ConnectTimeout=5 "$TARGET" "echo still-up" >/dev/null 2>&1; then
+# After a reboot command: wait until SSH drops, then until it returns, then
+# require a new boot id. The reboot command's own exit code is not used.
+wait_for_new_boot() {
+  local old_id=$1
+  local deadline new_id
+  echo "==> Waiting until SSH stops (up to 3 minutes). A dropped connection is expected."
+  deadline=$((SECONDS + 180))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if ! ssh_cmd "$TARGET" "echo up" >/dev/null 2>&1; then
+      echo "==> SSH has stopped."
       break
     fi
-    i=$((i + 1))
-    sleep 5
+    sleep 2
   done
-  wait_for_ssh
-else
-  echo "Phase 1 failed (ssh exit ${phase1_rc})." >&2
+
+  if ssh_cmd "$TARGET" "echo up" >/dev/null 2>&1; then
+    new_id=$(read_boot_id || true)
+    if [ -n "$new_id" ] && [ "$new_id" != "$old_id" ]; then
+      echo "==> Boot id changed (${old_id} -> ${new_id})."
+      return 0
+    fi
+    echo "SSH kept answering and the boot id did not change (still ${old_id}). The Pi did not reboot. Stopped." >&2
+    return 1
+  fi
+
+  echo "==> Waiting until SSH answers again (up to 5 minutes)."
+  deadline=$((SECONDS + 300))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if ssh_cmd "$TARGET" "echo up" >/dev/null 2>&1; then
+      echo "==> SSH is back."
+      break
+    fi
+    sleep 3
+  done
+
+  if ! ssh_cmd "$TARGET" "echo up" >/dev/null 2>&1; then
+    echo "The Pi did not come back on SSH within 5 minutes. Stopped." >&2
+    return 1
+  fi
+
+  new_id=$(read_boot_id)
+  if [ -z "$new_id" ] || [ "$new_id" = "$old_id" ]; then
+    echo "The boot id did not change (still ${old_id}). The Pi did not reboot. Stopped." >&2
+    return 1
+  fi
+  echo "==> Boot id changed (${old_id} -> ${new_id})."
+}
+
+run_remote_reboot() {
+  local script=$1
+  # ssh -t so sudo and the password prompt have a terminal.
+  # Exit status is ignored: reboot often closes SSH with 255, and sometimes
+  # the client still sees 0 if the Pi has not dropped the session yet.
+  set +e
+  ssh -t "${SSH_BASE[@]}" "$TARGET" "$script"
+  set -e
+}
+
+echo "==> Checking whether the overlay is on"
+set +e
+remote_overlay_on
+overlay_rc=$?
+set -e
+if [ "$overlay_rc" -eq 2 ]; then
   exit 1
 fi
+if [ "$overlay_rc" -eq 0 ]; then
+  old_boot=$(read_boot_id)
+  echo "==> Overlay is on (boot id ${old_boot})."
+  echo "==> Copying setup files, then phase 1 will turn the overlay off and reboot."
+  copy_files
+  echo "    Type the current sudo password if the Pi asks. SSH will drop. That is expected."
+  run_remote_reboot "sudo bash ~/${REMOTE}/pi/setup.sh phase1"
+  wait_for_new_boot "$old_boot"
+  set +e
+  remote_overlay_on
+  overlay_rc=$?
+  set -e
+  if [ "$overlay_rc" -ne 1 ]; then
+    echo "The overlay is still on after the reboot. Stopped." >&2
+    exit 1
+  fi
+  echo "==> Overlay is off."
+else
+  echo "==> Overlay is already off. Skipping the first reboot."
+fi
 
-echo "==> Step 3: copy files again (the first copy was wiped if the overlay was on)"
+echo "==> Copying files onto the writable root"
 copy_files
 
-echo "==> Step 4: phase 2 (packages, password, kiosk, overlay, reboot)"
+old_boot=$(read_boot_id)
+echo "==> Phase 2 (install, password, overlay, reboot). Boot id now ${old_boot}."
 echo "    If sudo asks, type the current password."
 echo "    Then type a new password for uscillaaa twice. This script does not store it."
+run_remote_reboot "sudo KEEP_SSH=${KEEP_SSH:-0} bash ~/${REMOTE}/pi/setup.sh phase2"
+wait_for_new_boot "$old_boot"
+
 if [ "${KEEP_SSH:-0}" = "1" ]; then
-  echo "    KEEP_SSH=1: SSH stays on."
+  echo "==> KEEP_SSH=1, so SSH stays on."
 else
-  echo "    SSH is turned off at the end. The screen should come up as the kiosk after reboot."
-fi
-
-set +e
-ssh -t "${SSH_BASE[@]}" "$TARGET" "sudo KEEP_SSH=${KEEP_SSH:-0} bash ~/${REMOTE}/pi/setup.sh phase2"
-phase2_rc=$?
-set -e
-
-if [ "$phase2_rc" -ne 0 ] && [ "$phase2_rc" -ne 255 ]; then
-  echo "Phase 2 failed (ssh exit ${phase2_rc})." >&2
-  exit 1
+  echo "==> Turning SSH off now that the new boot is confirmed."
+  set +e
+  ssh -t "${SSH_BASE[@]}" "$TARGET" "sudo raspi-config nonint do_ssh 1"
+  ssh_rc=$?
+  set -e
+  if [ "$ssh_rc" -ne 0 ] && [ "$ssh_rc" -ne 255 ]; then
+    echo "Could not turn SSH off (ssh exit ${ssh_rc})." >&2
+    exit 1
+  fi
 fi
 
 echo "DONE"

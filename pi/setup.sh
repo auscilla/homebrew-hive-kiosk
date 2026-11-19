@@ -15,7 +15,6 @@ USER_NAME=$(hive_user)
 HOME_DIR=$(getent passwd "$USER_NAME" | cut -d: -f6 || true)
 
 require_root
-trap 'umount_real_root' EXIT
 
 if [ -z "$HOME_DIR" ] || [ ! -d "$HOME_DIR" ]; then
   echo "User ${USER_NAME} has no home directory. Create that account in Raspberry Pi Imager first." >&2
@@ -159,16 +158,12 @@ EOF
 
 phase1() {
   if ! overlay_active; then
-    echo "Phase 1: overlay is already off."
-    write_state phase1 || true
-    echo "HIVE_KIOSK_PHASE1_SKIP"
+    echo "Phase 1: overlay is already off. Not rebooting."
     exit 0
   fi
-  echo "Phase 1: overlay is on. Disabling it so the install survives reboot."
-  write_state phase1 || echo "State file could not be written under the overlay. Phase 2 does not need it."
+  echo "Phase 1: overlay is on. Disabling it and rebooting."
   raspi_disable_overlay
   sync
-  umount_real_root || true
   echo "HIVE_KIOSK_PHASE1_REBOOT"
   reboot
 }
@@ -207,20 +202,14 @@ phase2() {
     sed -i "s/^#\\?autologin-user=.*/autologin-user=${USER_NAME}/" /etc/lightdm/lightdm.conf
   fi
 
-  write_state phase2
-  echo "Enabling the overlay. The next reboot makes the root read-only again."
+  write_state phase2 || true
+  # SSH stays up across this reboot so the Mac can read the new boot id.
+  # install-from-mac.sh turns SSH off after that check unless KEEP_SSH=1.
+  echo "Enabling the overlay and rebooting. SSH stays on until the installer confirms the new boot."
   raspi_enable_overlay
   sync
-  umount_real_root || true
-  echo "HIVE_KIOSK_PHASE2_OK"
-  schedule_reboot 5
-  if [ "${KEEP_SSH:-0}" != "1" ]; then
-    echo "Disabling SSH."
-    raspi-config nonint do_ssh 1
-  else
-    echo "KEEP_SSH=1, so SSH stays on."
-  fi
-  exit 0
+  echo "HIVE_KIOSK_PHASE2_REBOOT"
+  reboot
 }
 
 case "$PHASE" in

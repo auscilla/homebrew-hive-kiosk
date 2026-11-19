@@ -42,13 +42,15 @@ One command per step. The Pi is on the store Wi-Fi and SSH is still on.
 
    The shell ends in `~/hive-kiosk`.
 
-5. Install. This reboots the Pi twice and takes about 10–15 minutes.
+5. Install. This reboots the Pi twice and takes about 10–15 minutes. It is safe to run again if a reboot interrupted the last try.
 
    ```bash
    ./pi/install-from-mac.sh uscillaaa@192.168.1.198
    ```
 
-   You will be asked for the current sudo password, then a new password for `uscillaaa` twice. The password is typed into SSH. It is not written into a file. The script prints step lines and ends with `DONE`. To keep SSH for the update script, use `KEEP_SSH=1 ./pi/install-from-mac.sh uscillaaa@192.168.1.198` instead.
+   You should see `Overlay is on` (or `Overlay is already off. Skipping the first reboot.` if you are rerunning after phase 1). When a reboot happens, the next lines are `Waiting until SSH stops`, `SSH has stopped`, `SSH is back`, and `Boot id changed (... -> ...)`. A dropped SSH session is expected. The script does not treat that as "the overlay was already off."
+
+   Then it asks for the current sudo password, then a new password for `uscillaaa` twice. The password is typed into SSH. It is not written into a file. After the second reboot it waits for a new boot id again, turns SSH off, and prints `DONE`. To leave SSH on, use `KEEP_SSH=1 ./pi/install-from-mac.sh uscillaaa@192.168.1.198` instead.
 
 6. Look at the screen. It should be the Homebrew Hive kiosk in full screen, cursor hidden, with no desktop panel.
 
@@ -58,7 +60,7 @@ One command per step. The Pi is on the store Wi-Fi and SSH is still on.
    ssh uscillaaa@192.168.1.198
    ```
 
-   The connection is refused or times out.
+   The connection is refused or times out. That off switch is applied after the new boot is confirmed. The overlay is already on, so a later reboot starts SSH again. To keep it off across reboots, turn the overlay off, run `sudo raspi-config nonint do_ssh 1`, turn the overlay back on, and reboot.
 
 ## Fresh Pi
 
@@ -77,11 +79,7 @@ Boot it, find it at `192.168.1.198` (or the address the router gives it), then s
 sudo bash /home/uscillaaa/hive-kiosk/pi/update.sh
 ```
 
-Or, after SSH is off, from a local keyboard: Ctrl+Alt+F2, log in, run the same command. The script turns the overlay off, reboots, runs `apt full-upgrade`, turns the overlay back on, and reboots. If the automatic continue step does not run, after the first reboot run:
-
-```bash
-sudo bash /boot/firmware/hive-kiosk/update.sh --continue
-```
+Or, after SSH is off, from a local keyboard: Ctrl+Alt+F2, log in, run the same command. If the overlay is on, the script turns it off and reboots. Run it again after that reboot: it upgrades, turns the overlay back on, and reboots. Running it again from either state is safe.
 
 ## Rollback
 
