@@ -53,6 +53,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 1.5rem !important;
   align-items: start !important; /* Prevents cards from stretching to row height */
+  min-height: 0; /* flex item: shrink so the page bar below stays on the 800x480 screen */
 }
 
 /* Enforce the structure of the cards */
@@ -209,15 +210,16 @@ img {
 }
 
 /* ==================== BROWSE PAGE BAR (Previous / PAGE x / y / Next) ==================== */
-/* Sits after the 5th row of carts inside #game-grid. It is a <nav>, not a <div>, so the
-   existing `#game-grid > div` cart rules never apply to it; the cart tiles are unchanged. */
+/* Sits under the 4 rows, outside #game-grid, so the arrows stay fully on the 800x480
+   kiosk screen. It is a <nav>, not a grid cart, so the cart tiles are unchanged. */
 .page-bar {
-  grid-column: 1 / -1;
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 24px;
   padding: 8px 0 4px;
+  background: #18181b;
 }
 .page-bar.is-hidden { display: none; }
 .page-btn {
@@ -249,6 +251,33 @@ img {
   color: #fbbf24;
   letter-spacing: 0.08em;
   white-space: nowrap;
+}
+
+/* 800x480 kiosk: the page bar takes a strip under the grid. Tighten the browse
+   chrome so that strip does not shrink the grid, and the scrollbar thumb stays
+   taller than it was with 5 rows. */
+@media (max-height: 600px) {
+  #screen-browse {
+    padding: 6px 8px 4px !important;
+  }
+  #screen-browse > div:first-child {
+    margin-bottom: 6px !important;
+    padding: 6px 8px !important;
+  }
+  #screen-browse > div:nth-child(2) {
+    margin-bottom: 6px !important;
+    padding-bottom: 0 !important;
+  }
+  #screen-browse .category-btn {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+  .page-bar {
+    padding: 4px 0 0 !important;
+  }
+  .page-btn {
+    min-height: 48px;
+  }
 }
 
 /* ==================== INSERT CARTRIDGE: TERMS AGREEMENT ==================== */

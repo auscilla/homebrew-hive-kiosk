@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13" />
+  <link rel="stylesheet" href="style.css?v=14" />
 </head>
 <body class="bg-zinc-950 text-white font-pixel select-none overflow-hidden h-screen w-screen">
 
@@ -113,7 +113,7 @@
       <button onclick="filterCategory('Indie')" class="category-btn px-4 py-2 rounded-full bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-700">Indie</button>
     </div>
     <div id="game-grid" class="grid grid-cols-3 gap-5 overflow-y-auto flex-1 pr-2 pb-4"></div>
-    <!-- Page bar: moved to the bottom of the grid (after the 5th row) by renderPage() in app.js -->
+    <!-- Page bar stays below the grid so Previous / Next stay on screen under the 4 rows. -->
     <nav id="page-bar" class="page-bar is-hidden" aria-label="Game pages">
       <button id="btn-page-prev" type="button" class="page-btn" aria-label="Previous page">&#9664; PREV</button>
       <span id="page-indicator" class="page-label" aria-live="polite"></span>
@@ -367,6 +367,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>
