@@ -16,7 +16,7 @@ let currentStoreEmail = localStorage.getItem('kiosk_store_email') || DEFAULT_STO
 let selectedGameForWishlist = null;
 let currentCategory = 'all';
 const TERMS_VERSION = '2026-11-15'; // bump when the Homebrew Hive Terms text changes
-const ROWS_PER_PAGE = 5;     // 5 rows of big carts per page
+const ROWS_PER_PAGE = 4;     // 4 rows of big carts per page
 const COLUMNS_PER_PAGE = 3;  // matches grid-cols-3 on #game-grid
 const GAMES_PER_PAGE = ROWS_PER_PAGE * COLUMNS_PER_PAGE;
 let filteredGames = [];
@@ -190,8 +190,9 @@ function applyFilters() {
 }
 
 // ==================== BROWSE PAGINATION ====================
-// The grid keeps the original big cart tiles and still scrolls inside itself;
-// each page holds 5 rows x 3 carts, with the page bar after the last row.
+// The grid keeps the original big cart tiles and still scrolls inside itself.
+// Each page holds 4 rows x 3 carts. The page bar stays outside the grid so the
+// Previous / Next arrows stay on the 800x480 kiosk screen.
 function pageCount() {
   return Math.max(1, Math.ceil(filteredGames.length / GAMES_PER_PAGE));
 }
@@ -206,9 +207,6 @@ function renderPage() {
   if (grid) grid.scrollTop = 0; // every page starts at the top
   if (!bar) return;
 
-  // renderGames() replaces the grid's contents, so re-attach the bar as the
-  // last grid item (it spans all columns via .page-bar in style.css).
-  if (grid) grid.appendChild(bar);
   const prev = document.getElementById('btn-page-prev');
   const next = document.getElementById('btn-page-next');
   const label = document.getElementById('page-indicator');
