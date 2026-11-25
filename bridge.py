@@ -52,7 +52,7 @@ def flash_cartridge():
             flash_cmd,
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=150  # 4 MB ROMs can take over a minute; app.js waits 155 s
         )
 
         output = (result.stdout or "") + (result.stderr or "")
@@ -109,7 +109,7 @@ def flash_cartridge():
         return jsonify({"status": "success", "output": "Cartridge flashed successfully!"})
 
     except subprocess.TimeoutExpired:
-        print("Hardware flashing timed out after 60s", flush=True)
+        print("Hardware flashing timed out after 150s", flush=True)
         return jsonify({
             "status": "error",
             "error_type": "TIMEOUT",
