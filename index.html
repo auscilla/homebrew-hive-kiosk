@@ -215,6 +215,20 @@
     </div>
   </div>
 
+  <!-- ==================== SCREEN: CART SERIAL (only when CART_SERIALS_ENABLED is on) ==================== -->
+  <div id="screen-cart-serial" class="screen hidden flex-col items-center justify-start h-full p-8 text-center bg-zinc-950">
+    <h1 class="text-xl md:text-2xl font-bold text-amber-400 mt-4 mb-2 tracking-wide">TYPE THE NUMBER ON THE BACK OF YOUR CART</h1>
+    <p class="text-[10px] text-zinc-400 mb-6">Capitals and dashes don't matter.</p>
+    <div class="flex flex-col gap-3 w-full max-w-xs">
+      <input type="text" id="cart-serial-input" placeholder="CART NUMBER" autocomplete="off" autocapitalize="characters" spellcheck="false" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-sm text-white text-center uppercase tracking-widest focus:outline-none focus:border-amber-500" />
+      <input type="text" id="cart-serial-confirm" placeholder="TYPE IT AGAIN" autocomplete="off" autocapitalize="characters" spellcheck="false" class="w-full bg-black border border-zinc-600 rounded-lg p-3 text-sm text-white text-center uppercase tracking-widest focus:outline-none focus:border-amber-500" />
+      <p id="cart-serial-error" class="hidden text-[10px] text-rose-500 font-bold"></p>
+      <div id="cart-serial-staff" class="hidden bg-rose-950/60 border border-rose-700 rounded-lg p-3 text-xs text-rose-200 font-bold">We don't recognize that number. Please ask a staff member for help.</div>
+      <button id="btn-cart-serial-next" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg tracking-wider">NEXT</button>
+      <button id="btn-cart-serial-back" class="bg-rose-800 hover:bg-rose-700 text-white py-2.5 rounded-xl font-bold text-xs tracking-wider">GO BACK</button>
+    </div>
+  </div>
+
   <!-- ==================== SCREEN 4: PROGRESS ==================== -->
   <div id="screen-progress" class="screen hidden flex-col items-center justify-center h-full p-8 text-center bg-zinc-950 relative">
     <h1 class="text-2xl font-bold mb-8">Game Printing in Progress</h1>
@@ -367,6 +381,6 @@
   </div>
 
   <!-- Cache busted JS link -->
-  <script src="app.js?v=22"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>

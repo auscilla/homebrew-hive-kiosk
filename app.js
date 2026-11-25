@@ -27,6 +27,17 @@ let pendingCustomerEmail = null; // email typed before the print log id came bac
 let emailSaveState = 'none';     // none | pending | saved | failed: drives the honest success copy
 let printLogSeq = 0;              // bumps per print and on return home, so a late reply never lands on the next cart
 const PRINT_LOG_WAIT_MS = 3000;   // longest the success screen waits on Supabase after a good flash
+const FLASH_CLIENT_TIMEOUT_MS = 155000; // a bit longer than the bridge's 150 s FlashGBX timeout (4 MB ROMs)
+
+// CART SERIALS (feature flag, OFF by default). When on, the customer types the serial on the
+// back of the cart before flashing, and billing goes through record_flash (first flash of a game
+// on a cart is billed, a reflash of the same game is $0). Staff turn it on for testing with
+// localStorage.setItem('kiosk_cart_serials', 'on') and off with removeItem. Needs the
+// 001-cart-serials SQL (carts, cart_flashes, check_cart, record_flash) applied first.
+const CART_SERIALS_ENABLED = localStorage.getItem('kiosk_cart_serials') === 'on';
+const CART_SERIAL_MAX_MISSES = 3;
+let currentCartSerial = null;     // normalized serial checked for this print
+let cartSerialMisses = 0;
 let pinStepShownAt = 0;           // ignore the second half of a double tap on NEXT landing on the PIN step buttons
 const pinStepJustOpened = () => Date.now() - pinStepShownAt < 600;
 
@@ -116,6 +127,7 @@ async function loadGamesFromSupabase() {
 function navigateTo(screenId) {
   if (screenId === 'screen-landing') {
     logoutUser();
+    currentCartSerial = null;
     lastPrintLogId = null;
     pendingCustomerEmail = null;
     emailSaveState = 'none';
@@ -140,6 +152,7 @@ function navigateTo(screenId) {
 
   // Every time the insert-cartridge screen opens, the terms box starts unticked.
   if (screenId === 'screen-insert-cartridge') resetTermsAgreement();
+  if (screenId === 'screen-cart-serial') resetCartSerialScreen();
 }
 
 function renderGames(gamesList) {
@@ -779,6 +792,127 @@ async function logPrintToInvoice(game) {
   await Promise.race([insertDone, new Promise((resolve) => setTimeout(resolve, PRINT_LOG_WAIT_MS))]);
 }
 
+/* ==================== CART SERIALS (behind CART_SERIALS_ENABLED) ==================== */
+
+// Same rule as public.normalize_cart_serial(): ignore case, dashes, spaces and other symbols.
+function normalizeCartSerial(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function setCartSerialMessage(text) {
+  const el = document.getElementById('cart-serial-error');
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('hidden', !text);
+}
+
+function resetCartSerialScreen() {
+  currentCartSerial = null;
+  cartSerialMisses = 0;
+  ['cart-serial-input', 'cart-serial-confirm'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  setCartSerialMessage('');
+  const next = document.getElementById('btn-cart-serial-next');
+  if (next) { next.disabled = false; next.classList.remove('hidden'); }
+  document.getElementById('cart-serial-staff')?.classList.add('hidden');
+}
+
+function cartSerialLockout() {
+  // 3 misses: no flash, ask for staff. Only GO BACK stays available.
+  const next = document.getElementById('btn-cart-serial-next');
+  if (next) { next.disabled = true; next.classList.add('hidden'); }
+  setCartSerialMessage('');
+  document.getElementById('cart-serial-staff')?.classList.remove('hidden');
+  document.getElementById('keyboard-wrapper')?.classList.add('hidden');
+  document.activeElement?.blur?.();
+}
+
+async function submitCartSerial() {
+  const next = document.getElementById('btn-cart-serial-next');
+  if (next?.disabled) return;
+  const first = normalizeCartSerial(document.getElementById('cart-serial-input')?.value);
+  const second = normalizeCartSerial(document.getElementById('cart-serial-confirm')?.value);
+  if (!first) { setCartSerialMessage('Please type the number on the back of your cart.'); return; }
+  if (first !== second) { setCartSerialMessage("The two numbers don't match. Please type them again."); return; }
+  if (!selectedGameForWishlist) { handleHardwareError({ error_type: 'NO_GAME_SELECTED', message: 'No game selected.' }); return; }
+
+  if (next) next.disabled = true;
+  setCartSerialMessage('Checking...');
+  let row = null;
+  try {
+    const { data, error } = await supabaseClient.rpc('check_cart', {
+      p_serial: first,
+      p_game_id: String(selectedGameForWishlist.id)
+    });
+    if (error) throw error;
+    row = Array.isArray(data) ? data[0] : data;
+  } catch (err) {
+    console.error('check_cart failed:', err);
+    if (next) next.disabled = false;
+    // A network problem is not the customer's fault: no miss counted, and no flash.
+    setCartSerialMessage("We can't check that number right now. Please try again or ask a staff member.");
+    return;
+  }
+
+  if (row && row.known) {
+    currentCartSerial = first;
+    setCartSerialMessage('');
+    document.getElementById('keyboard-wrapper')?.classList.add('hidden');
+    document.activeElement?.blur?.();
+    navigateTo('screen-insert-cartridge');
+    return;
+  }
+
+  cartSerialMisses++;
+  if (cartSerialMisses >= CART_SERIAL_MAX_MISSES) { cartSerialLockout(); return; }
+  if (next) next.disabled = false;
+  setCartSerialMessage("We don't recognize that number. Please check it and try again.");
+}
+
+// Serial path replacement for logPrintToInvoice: one record_flash call writes print_logs and
+// cart_flashes and returns the print_logs id, so the customer email step works as before.
+async function recordFlashToInvoice(game, serial) {
+  lastPrintLogId = null;
+  pendingCustomerEmail = null;
+  emailSaveState = 'none';
+  const seq = ++printLogSeq;
+  if (!currentStoreEmail) return;
+  const gameTitle = game.title || game.name || 'Unknown Game';
+
+  const rpcDone = (async () => {
+    // Retry a few times: the flash already happened, so it must not go unlogged.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { data, error } = await supabaseClient.rpc('record_flash', {
+          p_serial: serial,
+          p_game_id: String(game.id),
+          p_store_email: currentStoreEmail
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        console.log(`Logged ${row?.flash_kind} flash of ${gameTitle} on cart ${serial} for ${currentStoreEmail} (billable: ${row?.is_billable})`);
+        if (seq === printLogSeq) {
+          lastPrintLogId = row?.print_log_id ?? null;
+          if (lastPrintLogId && pendingCustomerEmail) {
+            const email = pendingCustomerEmail;
+            pendingCustomerEmail = null;
+            saveCustomerEmailToPrintLog(email);
+          }
+        }
+        return;
+      } catch (err) {
+        console.error(`record_flash failed (attempt ${attempt}):`, err);
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+      }
+    }
+    console.error(`UNLOGGED FLASH: ${gameTitle} on cart ${serial} for ${currentStoreEmail}`);
+  })();
+
+  await Promise.race([rpcDone, new Promise((resolve) => setTimeout(resolve, PRINT_LOG_WAIT_MS))]);
+}
+
 async function prepareAndPrintGame(game) {
   labelEmailSubmitted = false;
   if (!game?.rom_url) {
@@ -792,9 +926,9 @@ async function prepareAndPrintGame(game) {
   const progressBar = document.getElementById('progress-bar');
   if (progressBar) progressBar.style.width = '10%';
 
-  // 65-second client timeout: guarantees the UI never hangs indefinitely
+  // Client timeout (slightly over the bridge's own): guarantees the UI never hangs indefinitely
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 65000);
+  const timeoutId = setTimeout(() => controller.abort(), FLASH_CLIENT_TIMEOUT_MS);
 
   try {
     console.log(`Sending flash request for ${game.title || game.name}...`);
@@ -816,7 +950,8 @@ async function prepareAndPrintGame(game) {
       if (progressBar) progressBar.style.width = '100%';
       console.log('Flash Output:', result.output);
       
-      await logPrintToInvoice(game);
+      if (CART_SERIALS_ENABLED && currentCartSerial) await recordFlashToInvoice(game, currentCartSerial);
+      else await logPrintToInvoice(game);
       
       setTimeout(() => {
         navigateTo('screen-success');
@@ -1253,13 +1388,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-start-print')?.addEventListener('click', () => {
-    navigateTo('screen-insert-cartridge');
+    navigateTo(CART_SERIALS_ENABLED ? 'screen-cart-serial' : 'screen-insert-cartridge');
+  });
+
+  document.getElementById('btn-cart-serial-next')?.addEventListener('click', submitCartSerial);
+  document.getElementById('btn-cart-serial-back')?.addEventListener('click', () => {
+    document.getElementById('keyboard-wrapper')?.classList.add('hidden');
+    navigateTo('modal-checkout');
   });
 
   document.getElementById('terms-agree')?.addEventListener('change', updateCartridgeTermsState);
 
   document.getElementById('btn-cartridge-done')?.addEventListener('click', async () => {
     if (!document.getElementById('terms-agree')?.checked) return; // terms not agreed: DONE is disabled
+    if (CART_SERIALS_ENABLED && !currentCartSerial) { navigateTo('screen-cart-serial'); return; } // never flash without a checked serial
     recordTermsAgreement(selectedGameForWishlist);
     const cartTitle = document.getElementById('printing-cart-title');
     if (cartTitle && selectedGameForWishlist) {
